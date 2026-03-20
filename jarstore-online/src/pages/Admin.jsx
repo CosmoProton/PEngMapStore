@@ -188,7 +188,7 @@ export default function Admin() {
                     </span>
                     {u.is_banned && u.ban_reason && <p style={{fontSize:12,color:'var(--danger)',marginTop:2}}>Motivo ban: {u.ban_reason}</p>}
                   </div>
-                  <div style={{display:'flex',gap:6'}}>
+                  <div style={{display:'flex',gap:6}}>
                     {!u.is_admin && !u.is_banned && (
                       <BanButton u={u} onBan={(reason)=>userAction(u.id,'ban',reason)}/>
                     )}
