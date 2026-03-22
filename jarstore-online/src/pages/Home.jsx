@@ -121,7 +121,7 @@ export default function Home() {
           </div>
         ) : (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:14}} className="programs-grid">
-            {filtered.map(p => <ProgramCard key={p.id} program={p} onDownload={fetchPrograms}/>)}
+            {filtered.map(p => <ProgramCard key={p.id} program={p} onDownload={fetchPrograms} onDelete={id=>setPrograms(prev=>prev.filter(p=>p.id!==id))} onUpdate={fetchPrograms}/>)}
           </div>
         )}
       </div>

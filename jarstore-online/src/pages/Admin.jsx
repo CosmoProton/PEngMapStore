@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth, apiFetch, STATUS_LABELS } from '../hooks/useAuth.jsx';
 import { useToast } from '../hooks/useToast.js';
 import { ToastContainer } from '../components/ToastContainer.jsx';
-import { CheckCircle, XCircle, Users, Package, Download, Clock, Shield, Ban, Star, StarOff, RefreshCw, HardDrive, AlertTriangle, UserCheck } from 'lucide-react';
+import { CheckCircle, XCircle, Users, Package, Download, Clock, Shield, Ban, Star, StarOff, RefreshCw, HardDrive, AlertTriangle, UserCheck, FileText, Trash2 } from 'lucide-react';
 
 const fmtDate = s => new Date(s).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
 const accountAge = d => {
@@ -22,6 +22,7 @@ export default function Admin() {
   const [stats,    setStats]    = useState(null);
   const [fetching, setFetching] = useState(false);
   const [noteMap,  setNoteMap]  = useState({});
+  const [log,      setLog]      = useState([]);
 
   const isAdmin = ['admin','superadmin'].includes(user?.user_status);
   useEffect(() => { if (!loading && !isAdmin) navigate('/'); }, [user, loading]);
@@ -50,6 +51,7 @@ export default function Admin() {
   useEffect(() => {
     if (tab==='queue') fetchQueue();
     else if (tab==='users') fetchUsers();
+    else if (tab==='log') fetchLog();
     else fetchStats();
   }, [tab]);
 
@@ -69,6 +71,13 @@ export default function Admin() {
       else fetchUsers();
     } catch(e) { toast.error(e.message); }
   };
+
+  const fetchLog = useCallback(async () => {
+    setFetching(true);
+    try { setLog(await apiFetch('/api/admin/log')); }
+    catch(e) { toast.error(e.message); }
+    finally { setFetching(false); }
+  }, []);
 
   const totalQueueBadge = (queue.programs?.length||0) + (queue.pendingUsers?.length||0);
   if (loading) return null;
@@ -96,6 +105,7 @@ export default function Admin() {
             { key:'queue', label:'Coda', icon:<Clock size={14}/>, badge:totalQueueBadge||null },
             { key:'users', label:'Utenti', icon:<Users size={14}/> },
             { key:'stats', label:'Stats', icon:<Package size={14}/> },
+            { key:'log', label:'Log', icon:<FileText size={14}/> },
           ].map(t=>(
             <button key={t.key} onClick={()=>setTab(t.key)} style={{...S.tab,...(tab===t.key?S.tabOn:{})}}>
               {t.icon}{t.label}
@@ -228,6 +238,52 @@ export default function Admin() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── LOG ── */}
+        {tab==='log' && (
+          <div className="fade-up">
+            <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:16,fontFamily:'var(--font-mono)'}}>
+              Storico programmi revisionati — note visibili solo agli admin
+            </p>
+            {log.length===0 ? (
+              <div style={S.empty}><FileText size={36} color="var(--text-muted)"/><p style={{color:'var(--text-secondary)',marginTop:10,fontSize:14}}>Nessun log ancora</p></div>
+            ) : log.map(p=>(
+              <div key={p.id} className="card" style={{padding:'14px 16px',marginBottom:8}}>
+                <div style={{display:'flex',alignItems:'flex-start',gap:12,flexWrap:'wrap'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4}}>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:13,fontWeight:700}}>{p.name}</span>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--accent)'}}>v{p.version}</span>
+                      <span className={`badge ${p.status==='approved'?'badge-green':'badge-red'}`}>{p.status==='approved'?'✅ Approvato':'❌ Rifiutato'}</span>
+                    </div>
+                    <div style={{display:'flex',gap:10,fontSize:11,color:'var(--text-muted)',flexWrap:'wrap'}}>
+                      <span>📁 {p.original_name}</span>
+                      <span>👤 @{p.uploader}</span>
+                      <span>📅 {fmtDate(p.updated_at)}</span>
+                    </div>
+                    {p.admin_note && (
+                      <div style={{marginTop:8,padding:'8px 10px',background:'var(--bg-elevated)',borderRadius:'var(--radius-sm)',borderLeft:'3px solid var(--warning)'}}>
+                        <span style={{fontSize:11,color:'var(--warning)',fontWeight:600,fontFamily:'var(--font-mono)'}}>NOTA ADMIN: </span>
+                        <span style={{fontSize:12,color:'var(--text-secondary)'}}>{p.admin_note}</span>
+                      </div>
+                    )}
+                  </div>
+                  <button className="btn btn-danger btn-sm" style={{flexShrink:0}}
+                    onClick={async()=>{
+                      if(!confirm('Eliminare definitivamente?')) return;
+                      try {
+                        await apiFetch('/api/programs/manage?id='+p.id, {method:'DELETE'});
+                        setLog(l=>l.filter(x=>x.id!==p.id));
+                        toast.success('Eliminato');
+                      } catch(e) { toast.error(e.message); }
+                    }}>
+                    <Trash2 size={13}/>Elimina
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
