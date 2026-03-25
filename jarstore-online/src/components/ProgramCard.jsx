@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Terminal, HardDrive, Calendar, Trash2, Edit2, X, Check, RefreshCw } from 'lucide-react';
+import { Download, Terminal, HardDrive, Calendar, Trash2, Edit2, X, Check, RefreshCw, Coffee } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { apiFetch, useAuth } from '../hooks/useAuth.jsx';
 
@@ -25,8 +25,6 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
   const tags = program.tags ? program.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
   const contributors = program.contributors ? program.contributors.split(',').map(t=>t.trim()).filter(Boolean) : [];
 
-  const replaceJar = async () => { /* Logica inalterata */ };
-  
   const handleDownload = async () => {
     setDownloading(true);
     try {
@@ -38,9 +36,6 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
     finally { setTimeout(()=>setDownloading(false), 1500); }
   };
 
-  const handleDelete = async () => { /* Logica inalterata */ };
-  const handleSave = async () => { /* Logica inalterata */ };
-
   const isAdmin = ['admin','superadmin'].includes(user?.user_status);
   const isOwner = user?.id === program.uploader_id;
   const contribs = (program.contributors||'').split(',').map(s=>s.trim().replace('@','').toLowerCase());
@@ -49,18 +44,17 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
 
   return (
     <>
-      <div className="card fade-up" style={S.card}>
+      <div className="card fade-up glass" style={S.card}>
         {editing ? (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <p style={{fontFamily:'var(--font-mono)', fontSize:14, color:'var(--accent)'}}>// Edit Mode</p>
-            {/* Ometto il form completo per brevità, usa le classi .input e .textarea */}
             <button className="btn btn-ghost" onClick={()=>setEditing(false)}>Chiudi editor</button>
           </div>
         ) : (
           <>
             <div style={S.header}>
               <div style={S.iconBox}>
-                <Terminal size={24} color="var(--text-primary)"/>
+                <Coffee size={24} color="var(--text-primary)"/>
               </div>
               <div style={S.headerText}>
                 <h3 style={S.name}>{program.name}</h3>
@@ -100,7 +94,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               </div>
               
               <div style={{display:'flex', gap:8}}>
-                <button className="btn btn-ghost btn-sm" style={{borderRadius: '50%', padding: '10px'}} onClick={()=>setShowHow(true)}>
+                <button className="btn btn-ghost btn-sm" style={{borderRadius: '50%', padding: '10px'}} onClick={()=>setShowHow(true)} title="Istruzioni">
                   <Terminal size={14}/>
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={handleDownload} disabled={downloading}>
@@ -112,8 +106,6 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
           </>
         )}
       </div>
-
-      {/* Mantieni i tuoi modali showDelConf e showHow qui, useranno automaticamente il nuovo stile .modal */}
     </>
   );
 }
