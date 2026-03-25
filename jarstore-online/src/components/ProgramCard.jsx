@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Download, HardDrive, Calendar, Trash2, Edit2, X, Check, Coffee, Info, Users } from 'lucide-react';
 import { apiFetch, useAuth } from '../hooks/useAuth.jsx';
+// --- AGGIUNTA MARKDOWN ---
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const fmtSize = b => b ? (b>=1048576 ? `${(b/1048576).toFixed(1)} MB` : `${(b/1024).toFixed(0)} KB`) : '—';
 const fmtDate = s => new Date(s).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
 
 export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
   const { user } = useAuth();
-  const [showInfo, setShowInfo] = useState(false); // Rinominato da showHow a showInfo
+  const [showInfo, setShowInfo] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showDelConf, setShowDelConf] = useState(false);
@@ -20,7 +23,11 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
   const [editContribs, setEditContribs] = useState(program.contributors||'');
 
   const tags = program.tags ? program.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
-  const contributors = program.contributors ? program.contributors.split(',').map(t=>t.trim()).filter(Boolean) : [];
+  
+  // FIX: Pulizia per evitare doppie @@ (rimuoviamo @ se già presente)
+  const contributors = program.contributors 
+    ? program.contributors.split(',').map(t=>t.trim().replace(/^@/, '')).filter(Boolean) 
+    : [];
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -59,8 +66,8 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
 
   const isAdmin = ['admin','superadmin'].includes(user?.user_status);
   const isOwner = user?.id === program.uploader_id;
-  const contribs = (program.contributors||'').split(',').map(s=>s.trim().replace('@','').toLowerCase());
-  const isContrib = contribs.includes(user?.github_username?.toLowerCase());
+  const contribsLower = (program.contributors||'').split(',').map(s=>s.trim().replace('@','').toLowerCase());
+  const isContrib = contribsLower.includes(user?.github_username?.toLowerCase());
   const canManage = isAdmin || isOwner || isContrib;
 
   return (
@@ -74,7 +81,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
             </div>
             
             <input className="input" style={{fontSize:13}} value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Nome"/>
-            <textarea className="textarea" style={{fontSize:13,minHeight:80}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Descrizione completa"/>
+            <textarea className="textarea" style={{fontSize:13,minHeight:120, fontFamily:'var(--font-mono)'}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Descrizione completa (Markdown)"/>
             
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
               <input className="input" style={{fontSize:13}} value={editVersion} onChange={e=>setEditVersion(e.target.value)} placeholder="Versione"/>
@@ -105,8 +112,12 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               )}
             </div>
 
-            {/* Qui c'è la magia: la descrizione è limitata a 2 righe da CSS */}
-            <p style={S.descPreview}>{program.description || 'Nessuna descrizione fornita.'}</p>
+            {/* ANTEPRIMA MARKDOWN */}
+            <div style={S.descPreview} className="markdown-preview">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {program.description || 'Nessuna descrizione fornita.'}
+              </ReactMarkdown>
+            </div>
             
             {tags.length > 0 && (
               <div style={S.tags}>
@@ -144,12 +155,11 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
         )}
       </div>
 
-      {/* NUOVO MODALE "INFO" */}
+      {/* MODALE INFO CON MARKDOWN COMPLETO */}
       {showInfo && (
         <div className="modal-overlay" onClick={()=>setShowInfo(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth: 600, maxHeight: '85vh', display: 'flex', flexDirection: 'column'}}>
             
-            {/* Header del Modale */}
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, borderBottom: '1px solid var(--glass-border)', paddingBottom: 16}}>
               <div>
                 <h3 style={{fontFamily:'var(--font-sans)', fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px'}}>{program.name}</h3>
@@ -158,20 +168,20 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               <button className="btn btn-ghost btn-sm" style={{padding: '6px', borderRadius: '50%'}} onClick={()=>setShowInfo(false)}><X size={20}/></button>
             </div>
             
-            {/* Corpo Scorrevole */}
-            <div style={{flex: 1, overflowY: 'auto', paddingRight: 8, marginBottom: 20}}>
-              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Descrizione Completa</h4>
-              <p style={{color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-wrap'}}>
-                {program.description || 'Nessuna descrizione fornita dall\'autore.'}
-              </p>
+            <div style={{flex: 1, overflowY: 'auto', paddingRight: 8, marginBottom: 20}} className="full-markdown-container">
+              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 12, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Descrizione Completa</h4>
+              <div style={{color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.6, marginBottom: 24}}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {program.description || "Nessuna descrizione fornita dall'autore."}
+                </ReactMarkdown>
+              </div>
 
               <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Esecuzione</h4>
-              <code style={{display:'block',padding:'14px',background:'rgba(0,0,0,0.4)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,wordBreak:'break-all', color: 'var(--text-primary)'}}>
+              <code style={{display:'block',padding:'14px',background:'rgba(0,0,0,0.4)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,wordBreak:'break-all', color: 'var(--text-primary)', fontFamily:'var(--font-mono)'}}>
                 <span style={{color: 'var(--accent)'}}>$</span> java -jar {program.original_name}
               </code>
             </div>
             
-            {/* Footer con Collaboratori e Tasto Download */}
             <div style={{display:'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: 16, flexWrap: 'wrap', gap: 16}}>
               <div style={{flex: 1, minWidth: 200}}>
                 <div style={{display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 12, marginBottom: 4}}>
@@ -223,22 +233,21 @@ const S = {
   ver:          { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', background: 'var(--accent-dim)', padding: '2px 8px', borderRadius: '8px' },
   actions:      { display:'flex', gap: 2, background: 'rgba(0,0,0,0.2)', borderRadius: '20px', padding: '4px', border: '1px solid var(--glass-border)' },
   
-  /* TESTO TRONCATO: La chiave è qui */
   descPreview:  { 
     fontSize: 14, 
     color: 'var(--text-secondary)', 
     lineHeight: 1.6,
     display: '-webkit-box',
-    WebkitLineClamp: 2, /* Mostra massimo 2 righe */
+    WebkitLineClamp: 2, 
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
   },
   
-  tags:         { display:'flex', flexWrap:'wrap', gap: 8 },
-  uploaderRow:  { display:'flex', alignItems:'center', gap: 8, marginTop: -4 },
+  tags:          { display:'flex', flexWrap:'wrap', gap: 8 },
+  uploaderRow:   { display:'flex', alignItems:'center', gap: 8, marginTop: -4 },
   uploaderAvatar: { width:20, height:20, borderRadius:'50%', border:'1px solid var(--glass-border)' },
   uploaderName: { fontSize:12, color:'var(--text-primary)', fontFamily:'var(--font-mono)' },
-  footer:       { display:'flex', alignItems:'center', justifyContent:'space-between', marginTop: 'auto' },
-  techSpecs:    { display:'flex', gap: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' },
+  footer:        { display:'flex', alignItems:'center', justifyContent:'space-between', marginTop: 'auto' },
+  techSpecs:     { display:'flex', gap: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' },
 };
