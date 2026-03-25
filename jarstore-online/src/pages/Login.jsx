@@ -1,71 +1,262 @@
-import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth.jsx';
-import { Package, AlertCircle, Users } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDropzone } from 'react-dropzone';
+import { useAuth, apiFetch, STATUS_LABELS } from '../hooks/useAuth.jsx';
+import { useToast } from '../hooks/useToast.js';
+import { ToastContainer } from '../components/ToastContainer.jsx';
+import { Upload, FileCode, XCircle, AlertCircle, CheckCircle } from 'lucide-react';
 
-const ERROR_MSG = {
-  banned:      '🚫 Il tuo account è stato sospeso.',
-  full:        '🚫 Il repository ha raggiunto il limite di 40 utenti.',
-  auth_failed: 'Autenticazione fallita. Riprova.',
-  no_code:     'Codice OAuth mancante. Riprova.',
-};
+export default function Submit() {
+  const { user, loading } = useAuth();
+  const navigate  = useNavigate();
+  const toast     = useToast();
+  
+  const [file, setFile]                 = useState(null);
+  const [name, setName]                 = useState('');
+  const [desc, setDesc]                 = useState('');
+  const [version, setVersion]           = useState('1.0.0');
+  const [tags, setTags]                 = useState('');
+  const [contributors, setContributors] = useState('');
+  
+  // --- STATI PER L'AUTOCOMPLETE ---
+  const [knownUsers, setKnownUsers] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  
+  const [uploading, setUploading]       = useState(false);
+  const [progress, setProgress]         = useState(0);
+  const [step, setStep]                 = useState('');
 
-export default function Login() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const error = params.get('error');
-  useEffect(() => { if (user) navigate('/'); }, [user, navigate]);
+  // 1. Recupera la lista degli utenti noti all'avvio del componente
+  useEffect(() => {
+    apiFetch('/api/admin/data?type=contributors')
+      .then(data => {
+        // Uniamo admin e contributor e prendiamo solo gli username unici
+        const users = [...(data.admins || []), ...(data.contributors || [])];
+        const usernames = [...new Set(users.map(u => u.github_username))];
+        setKnownUsers(usernames);
+      })
+      .catch(() => {});
+  }, []);
+
+  const onDrop = useCallback(accepted => {
+    if (accepted[0]) { setFile(accepted[0]); if (!name) setName(accepted[0].name.replace('.jar','')); }
+  }, [name]);
+
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+    onDrop,
+    accept: { 'application/java-archive':['.jar'], 'application/octet-stream':['.jar'] },
+    maxFiles: 1, maxSize: 100*1024*1024,
+    onDropRejected: () => toast.error('Solo .jar fino a 100MB'),
+  });
+
+  // 2. Logica che si attiva ogni volta che digiti un collaboratore
+  const handleContributorsChange = (e) => {
+    const val = e.target.value;
+    setContributors(val);
+
+    // Trova la parola che l'utente sta digitando (dopo l'ultima virgola)
+    const parts = val.split(',');
+    const currentWord = parts[parts.length - 1].trim().replace('@', '');
+
+    if (currentWord.length > 0) {
+      // Filtra gli utenti che contengono le lettere digitate
+      const matches = knownUsers.filter(u => u.toLowerCase().includes(currentWord.toLowerCase()));
+      setFilteredSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  // 3. Logica per applicare il suggerimento cliccato
+  const acceptSuggestion = (username) => {
+    const parts = contributors.split(',');
+    parts.pop(); // Rimuoviamo il frammento incompleto appena digitato
+    
+    // Ricostruiamo la stringa con il nuovo utente formattato bene
+    const newVal = parts.length > 0
+      ? parts.map(p => p.trim()).join(', ') + `, @${username}, `
+      : `@${username}, `;
+      
+    setContributors(newVal);
+    setShowSuggestions(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!file)        return toast.error('Seleziona un file .jar');
+    if (!name.trim()) return toast.error('Inserisci il nome');
+    setUploading(true); setProgress(0);
+    try {
+      setStep('uploading');
+      const { uploadUrl, filePath } = await apiFetch('/api/upload-url', {
+        method:'POST', body: JSON.stringify({ filename: file.name }),
+      });
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', e => {
+          if (e.lengthComputable) setProgress(Math.round(e.loaded/e.total*100));
+        });
+        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('Upload fallito')));
+        xhr.addEventListener('error', () => reject(new Error('Errore di rete')));
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', 'application/java-archive');
+        xhr.send(file);
+      });
+
+      setStep('submitting');
+      await apiFetch('/api/programs/submit', {
+        method:'POST',
+        body: JSON.stringify({
+          name: name.trim(), description: desc.trim(),
+          version: version.trim()||'1.0.0', tags: tags.trim(),
+          contributors: contributors.trim(),
+          filePath, originalName: file.name, fileSize: file.size,
+        }),
+      });
+
+      setStep('done');
+      toast.success('Inviato! L\'admin lo revisionerà a breve.');
+      setTimeout(() => navigate('/'), 2000);
+    } catch(e) {
+      toast.error(e.message); setStep('');
+    } finally { setUploading(false); }
+  };
+
+  if (loading) return null;
+  if (!user) { navigate('/login'); return null; }
+
+  const sl = STATUS_LABELS[user.user_status];
+  const maxP = user.user_status==='whitelisted' ? 5 : user.user_status==='active' ? 2 : null;
+  const dropBorder = isDragReject?'var(--danger)':isDragActive?'var(--accent)':file?'var(--success)':'var(--glass-border)';
 
   return (
-    <div style={S.wrap}>
-      <div style={S.blob1}/><div style={S.blob2}/>
-      <div className="card fade-up" style={S.card}>
-        <div style={{textAlign:'center'}}>
-          <div style={S.iconBox}><Package size={28} color="var(--accent)"/></div>
-          <h1 style={S.title}>JarStore</h1>
-          <p style={S.sub}>Software Repository</p>
-        </div>
-        <div className="glow-line" style={{margin:'24px 0'}}/>
-        <h2 style={{fontFamily:'var(--font-mono)',fontSize:18,marginBottom:8}}>Accedi</h2>
-        <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:20,lineHeight:1.6}}>
-          Sfoglia e scarica programmi Java. Carica i tuoi progetti per la revisione.
-        </p>
-        {error && (
-          <div style={S.errBox}><AlertCircle size={15}/>{ERROR_MSG[error] || 'Si è verificato un errore.'}</div>
-        )}
-        <a href="/api/auth/github" style={S.ghBtn}>
-          <GhIcon/> Continua con GitHub
-        </a>
-        <div style={S.infoBox}>
-          <Users size={14} color="var(--text-muted)"/>
-          <p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.6}}>
-            I nuovi account vengono approvati dall'admin prima di poter caricare progetti.<br/>
-            Anti-spam: account GitHub &gt;5 giorni + almeno 1 repo pubblico.
+    <>
+      <div className="page" style={{maxWidth:660}}>
+        <div className="fade-up" style={{marginBottom:24}}>
+          <h1 style={{fontFamily:'var(--font-mono)',fontSize:26,fontWeight:700}}>
+            <span style={{color:'var(--accent)'}}>{'//'} </span>Carica programma
+          </h1>
+          <p style={{color:'var(--text-muted)',fontSize:12,marginTop:4,fontFamily:'var(--font-mono)'}}>
+            Verrà revisionato dall'admin prima di essere pubblicato
           </p>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function GhIcon() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-    </svg>
+        {/* Banner status */}
+        {['whitelisted','admin','superadmin'].includes(user.user_status) && (
+          <div style={{...S.banner, borderColor:'rgba(48, 209, 88, 0.3)', background:'rgba(48, 209, 88, 0.06)'}} className="fade-up">
+            <CheckCircle size={15} color="var(--success)"/>
+            <span style={{fontSize:13,color:'var(--success)'}}>
+              Account <strong>{sl?.label}</strong> {maxP ? ` — max ${maxP} progetti approvati` : ' — nessun limite'}
+            </span>
+          </div>
+        )}
+        {user.user_status === 'active' && (
+          <div style={S.banner} className="fade-up">
+            <AlertCircle size={15} color="var(--warning)"/>
+            <span style={{fontSize:13,color:'var(--text-secondary)'}}>
+              Account <strong style={{color:'var(--warning)'}}>Utente</strong> — max 2 progetti approvati · 1 in revisione
+            </span>
+          </div>
+        )}
+
+        <div className="card fade-up glass" style={{padding:24,display:'flex',flexDirection:'column',gap:14,marginTop:14}}>
+          <div {...getRootProps()} style={{...S.drop,borderColor:dropBorder,background:isDragActive?'var(--accent-dim)':file?'rgba(48, 209, 88, 0.06)':'var(--glass-bg)'}}>
+            <input {...getInputProps()}/>
+            {file ? (
+              <div style={{display:'flex',alignItems:'center',gap:12,width:'100%',flexWrap:'wrap'}}>
+                <FileCode size={28} color="var(--success)"/>
+                <div style={{flex:1,minWidth:0}}>
+                  <p style={{fontFamily:'var(--font-mono)',fontSize:13,wordBreak:'break-all'}}>{file.name}</p>
+                  <p style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{(file.size/1048576).toFixed(2)} MB</p>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();setFile(null);}}>
+                  <XCircle size={13}/>Rimuovi
+                </button>
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,pointerEvents:'none'}}>
+                <Upload size={32} color={isDragActive?'var(--accent)':'var(--text-muted)'}/>
+                <p style={{fontFamily:'var(--font-sans)',fontSize:13,color:'var(--text-secondary)'}}>
+                  {isDragActive ? 'Rilascia il .jar' : 'Trascina il .jar qui o clicca per esplorare'}
+                </p>
+                <p style={{fontSize:11,color:'var(--text-muted)'}}>MAX 100 MB</p>
+              </div>
+            )}
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 120px',gap:10}} className="form-two-col">
+            <div style={S.field}>
+              <label style={S.label}>Nome *</label>
+              <input className="input" placeholder="Nome programma" value={name} onChange={e=>setName(e.target.value)}/>
+            </div>
+            <div style={S.field}>
+              <label style={S.label}>Versione</label>
+              <input className="input" placeholder="1.0.0" value={version} onChange={e=>setVersion(e.target.value)}/>
+            </div>
+          </div>
+
+          <div style={S.field}>
+            <label style={S.label}>Descrizione</label>
+            <textarea className="textarea" placeholder="Descrivi il programma…" value={desc} onChange={e=>setDesc(e.target.value)} style={{minHeight:70}}/>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}} className="form-two-col">
+            <div style={S.field}>
+              <label style={S.label}>Tag (virgola)</label>
+              <input className="input" placeholder="gioco, utility…" value={tags} onChange={e=>setTags(e.target.value)}/>
+            </div>
+            
+            {/* CAMPO COLLABORATORI CON AUTOCOMPLETE */}
+            <div style={{...S.field, position: 'relative'}}>
+              <label style={S.label}>Collaboratori (virgola)</label>
+              <input 
+                className="input" 
+                placeholder="@utente1, @utente2..." 
+                value={contributors} 
+                onChange={handleContributorsChange}
+                // Il timeout serve per non chiudere il menu prima che l'utente abbia cliccato
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} 
+                onFocus={handleContributorsChange}
+              />
+              
+              {showSuggestions && (
+                <div className="suggestions-dropdown">
+                  {filteredSuggestions.map(u => (
+                    <div key={u} className="suggestion-item" onClick={() => acceptSuggestion(u)}>
+                      @{u}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {uploading && (
+            <div>
+              <div style={{height:5,background:'var(--glass-border)',borderRadius:3,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${progress}%`,background:'linear-gradient(90deg,var(--accent),var(--accent2))',borderRadius:3,transition:'width .2s'}}/>
+              </div>
+              <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>
+                {step==='uploading' ? `Caricamento… ${progress}%` : 'Registrazione…'}
+              </p>
+            </div>
+          )}
+
+          <button className="btn btn-primary" style={{justifyContent:'center'}} onClick={handleSubmit} disabled={uploading||!file}>
+            {uploading ? <><span className="spinner" style={{width:15,height:15}}/>Invio…</> : <><Upload size={15}/>Invia per revisione</>}
+          </button>
+        </div>
+      </div>
+      <ToastContainer toasts={toast.toasts}/>
+    </>
   );
 }
 
 const S = {
-  wrap:    { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:16, position:'relative', overflow:'hidden' },
-  blob1:   { position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle,rgba(0,210,255,0.08) 0%,transparent 70%)', top:'-15%', left:'5%', pointerEvents:'none' },
-  blob2:   { position:'absolute', width:350, height:350, borderRadius:'50%', background:'radial-gradient(circle,rgba(124,58,237,0.06) 0%,transparent 70%)', bottom:'-10%', right:'5%', pointerEvents:'none' },
-  card:    { padding:'32px 28px', width:'100%', maxWidth:400, position:'relative' },
-  iconBox: { width:56, height:56, borderRadius:14, background:'var(--bg-elevated)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', boxShadow:'0 0 20px rgba(0,210,255,0.12)' },
-  title:   { fontFamily:'var(--font-mono)', fontSize:24, fontWeight:700 },
-  sub:     { fontSize:12, color:'var(--text-muted)', marginTop:3 },
-  errBox:  { display:'flex', alignItems:'flex-start', gap:8, padding:'10px 12px', background:'rgba(248,81,73,0.08)', border:'1px solid rgba(248,81,73,0.3)', borderRadius:'var(--radius-sm)', color:'var(--danger)', fontSize:13, marginBottom:14 },
-  ghBtn:   { display:'flex', alignItems:'center', justifyContent:'center', gap:10, width:'100%', padding:'12px 16px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', color:'var(--text-primary)', fontSize:14, fontWeight:600, cursor:'pointer', textDecoration:'none', transition:'all var(--transition)', marginBottom:16 },
-  infoBox: { display:'flex', alignItems:'flex-start', gap:8, padding:'10px 12px', background:'rgba(0,0,0,0.2)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)' },
+  banner: { display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:'var(--radius-md)', marginBottom:0 },
+  drop:   { border:'2px dashed', borderRadius:'var(--radius-md)', padding:'24px 16px', cursor:'pointer', transition:'all var(--transition)', minHeight:110, display:'flex', alignItems:'center', justifyContent:'center' },
+  field:  { display:'flex', flexDirection:'column', gap:5 },
+  label:  { fontSize:11, fontWeight:600, color:'var(--text-secondary)', letterSpacing:'.04em', textTransform:'uppercase' },
 };

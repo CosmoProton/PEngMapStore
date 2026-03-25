@@ -186,3 +186,33 @@ code {
   .modal { padding: 24px; }
   .btn { padding: 8px 16px; }
 }
+
+/* --- Autocomplete Dropdown --- */
+.suggestions-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(28, 28, 30, 0.95);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 50;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  backdrop-filter: blur(20px);
+}
+.suggestion-item {
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.suggestion-item:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
