@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, STATUS_LABELS } from '../hooks/useAuth.jsx';
-import { Package, Shield, LogOut, Home, Upload, Info } from 'lucide-react';
+import { Package, Shield, LogOut, Home, Info } from 'lucide-react';
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -23,16 +23,11 @@ export function Navbar() {
         <div style={S.rightSide} className="nav-actions">
           {user ? (
             <>
-              {/* Sezioni del sito */}
+              {/* Sezioni del sito (Rimossa la voce "Carica") */}
               <div style={S.links} className="nav-links">
                 <Link to="/" style={{...S.link, ...(pathname==='/'?S.linkOn:{})}}>
                   <Home size={16}/> <span className="hide-mobile-text">Programmi</span>
                 </Link>
-                {['active','whitelisted','admin','superadmin','teacher'].includes(user.user_status) && (
-                  <Link to="/submit" style={{...S.link, ...(pathname==='/submit'?S.linkOn:{})}}>
-                    <Upload size={16}/> <span className="hide-mobile-text">Carica</span>
-                  </Link>
-                )}
                 <Link to="/contributors" style={{...S.link, ...(pathname==='/contributors'?S.linkOn:{})}}>
                   <Info size={16}/> <span className="hide-mobile-text">Info</span>
                 </Link>
