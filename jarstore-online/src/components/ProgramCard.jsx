@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Download, Terminal, HardDrive, Calendar, Trash2, Edit2, X, Check, RefreshCw, Coffee } from 'lucide-react';
-import { useDropzone } from 'react-dropzone';
+import { Download, HardDrive, Calendar, Trash2, Edit2, X, Check, Coffee, Info, Users } from 'lucide-react';
 import { apiFetch, useAuth } from '../hooks/useAuth.jsx';
 
 const fmtSize = b => b ? (b>=1048576 ? `${(b/1048576).toFixed(1)} MB` : `${(b/1024).toFixed(0)} KB`) : '—';
@@ -8,12 +7,10 @@ const fmtDate = s => new Date(s).toLocaleDateString('it-IT',{day:'2-digit',month
 
 export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
   const { user } = useAuth();
-  const [showHow, setShowHow] = useState(false);
+  const [showInfo, setShowInfo] = useState(false); // Rinominato da showHow a showInfo
   const [downloading, setDownloading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showDelConf, setShowDelConf] = useState(false);
-  const [newJar, setNewJar] = useState(null);
-  const [replacingJar, setReplacingJar] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [editName, setEditName] = useState(program.name);
@@ -36,6 +33,30 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
     finally { setTimeout(()=>setDownloading(false), 1500); }
   };
 
+  const handleDelete = async () => {
+    try {
+      await apiFetch(`/api/programs/manage?id=${program.id}`, { method:'DELETE' });
+      setShowDelConf(false);
+      onDelete?.(program.id);
+    } catch(e) { alert('Errore: ' + e.message); }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apiFetch(`/api/programs/manage?id=${program.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: editName, description: editDesc,
+          version: editVersion, tags: editTags, contributors: editContribs,
+        }),
+      });
+      setEditing(false);
+      onUpdate?.();
+    } catch(e) { alert('Errore: ' + e.message); }
+    finally { setSaving(false); }
+  };
+
   const isAdmin = ['admin','superadmin'].includes(user?.user_status);
   const isOwner = user?.id === program.uploader_id;
   const contribs = (program.contributors||'').split(',').map(s=>s.trim().replace('@','').toLowerCase());
@@ -47,8 +68,23 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
       <div className="card fade-up glass" style={S.card}>
         {editing ? (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            <p style={{fontFamily:'var(--font-mono)', fontSize:14, color:'var(--accent)'}}>// Edit Mode</p>
-            <button className="btn btn-ghost" onClick={()=>setEditing(false)}>Chiudi editor</button>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <p style={{fontFamily:'var(--font-mono)', fontSize:14, color:'var(--accent)'}}>{'//'} Edit Mode</p>
+              <button className="btn btn-ghost btn-sm" style={{padding:'4px'}} onClick={()=>setEditing(false)}><X size={16}/></button>
+            </div>
+            
+            <input className="input" style={{fontSize:13}} value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Nome"/>
+            <textarea className="textarea" style={{fontSize:13,minHeight:80}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Descrizione completa"/>
+            
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              <input className="input" style={{fontSize:13}} value={editVersion} onChange={e=>setEditVersion(e.target.value)} placeholder="Versione"/>
+              <input className="input" style={{fontSize:13}} value={editTags} onChange={e=>setEditTags(e.target.value)} placeholder="Tag (virgola)"/>
+            </div>
+            <input className="input" style={{fontSize:13}} value={editContribs} onChange={e=>setEditContribs(e.target.value)} placeholder="Collaboratori (virgola)"/>
+            
+            <button className="btn btn-primary btn-sm" style={{justifyContent:'center', marginTop:8}} onClick={handleSave} disabled={saving}>
+              {saving ? <span className="spinner" style={{width:13,height:13}}/> : <Check size={14}/>} Salva Modifiche
+            </button>
           </div>
         ) : (
           <>
@@ -69,7 +105,8 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               )}
             </div>
 
-            <p style={S.desc}>{program.description || 'Nessuna descrizione.'}</p>
+            {/* Qui c'è la magia: la descrizione è limitata a 2 righe da CSS */}
+            <p style={S.descPreview}>{program.description || 'Nessuna descrizione fornita.'}</p>
             
             {tags.length > 0 && (
               <div style={S.tags}>
@@ -94,8 +131,8 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               </div>
               
               <div style={{display:'flex', gap:8}}>
-                <button className="btn btn-ghost btn-sm" style={{borderRadius: '50%', padding: '10px'}} onClick={()=>setShowHow(true)} title="Istruzioni">
-                  <Terminal size={14}/>
+                <button className="btn btn-ghost btn-sm" style={{padding: '8px 12px', borderRadius: '20px'}} onClick={()=>setShowInfo(true)}>
+                  <Info size={14}/> Info
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={handleDownload} disabled={downloading}>
                   {downloading ? <span className="spinner" style={{width:14,height:14}}/> : <Download size={16}/>}
@@ -106,23 +143,102 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
           </>
         )}
       </div>
+
+      {/* NUOVO MODALE "INFO" */}
+      {showInfo && (
+        <div className="modal-overlay" onClick={()=>setShowInfo(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth: 600, maxHeight: '85vh', display: 'flex', flexDirection: 'column'}}>
+            
+            {/* Header del Modale */}
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, borderBottom: '1px solid var(--glass-border)', paddingBottom: 16}}>
+              <div>
+                <h3 style={{fontFamily:'var(--font-sans)', fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px'}}>{program.name}</h3>
+                <span style={{fontFamily:'var(--font-mono)', fontSize: 13, color: 'var(--accent)'}}>v{program.version}</span>
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{padding: '6px', borderRadius: '50%'}} onClick={()=>setShowInfo(false)}><X size={20}/></button>
+            </div>
+            
+            {/* Corpo Scorrevole */}
+            <div style={{flex: 1, overflowY: 'auto', paddingRight: 8, marginBottom: 20}}>
+              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Descrizione Completa</h4>
+              <p style={{color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-wrap'}}>
+                {program.description || 'Nessuna descrizione fornita dall\'autore.'}
+              </p>
+
+              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Esecuzione</h4>
+              <code style={{display:'block',padding:'14px',background:'rgba(0,0,0,0.4)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,wordBreak:'break-all', color: 'var(--text-primary)'}}>
+                <span style={{color: 'var(--accent)'}}>$</span> java -jar {program.original_name}
+              </code>
+            </div>
+            
+            {/* Footer con Collaboratori e Tasto Download */}
+            <div style={{display:'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: 16, flexWrap: 'wrap', gap: 16}}>
+              <div style={{flex: 1, minWidth: 200}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 12, marginBottom: 4}}>
+                  <Users size={14}/> <span>Team di sviluppo</span>
+                </div>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
+                  <span className="badge badge-gray">@{program.uploader} (Uploader)</span>
+                  {contributors.map((c, i) => (
+                    <span key={i} className="badge badge-gray">@{c}</span>
+                  ))}
+                </div>
+              </div>
+              
+              <button className="btn btn-primary" onClick={()=>{handleDownload();setShowInfo(false);}} disabled={downloading}>
+                {downloading ? <span className="spinner" style={{width:16,height:16}}/> : <Download size={16}/>}
+                Scarica .jar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Conferma eliminazione */}
+      {showDelConf && (
+        <div className="modal-overlay" onClick={()=>setShowDelConf(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth: 400}}>
+            <h3 style={{fontFamily:'var(--font-mono)',marginBottom:16}}>Elimina {program.name}?</h3>
+            <p style={{fontSize:14,color:'var(--text-secondary)',marginBottom:24, lineHeight:1.5}}>
+              Il file verrà rimosso in modo permanente dal server. Questa azione è <strong>irreversibile</strong>.
+            </p>
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <button className="btn btn-ghost" onClick={()=>setShowDelConf(false)}>Annulla</button>
+              <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={14}/> Elimina</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
 const S = {
-  card:       { padding: 24, display:'flex', flexDirection:'column', gap: 16 },
-  header:     { display:'flex', alignItems:'center', gap: 16 },
-  iconBox:    { width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))', border: '1px solid var(--glass-border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.2)' },
-  headerText: { flex: 1, minWidth: 0 },
-  name:       { fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: 4 },
-  ver:        { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', background: 'var(--accent-dim)', padding: '2px 8px', borderRadius: '8px' },
-  actions:    { display:'flex', gap: 2, background: 'rgba(0,0,0,0.2)', borderRadius: '20px', padding: '4px', border: '1px solid var(--glass-border)' },
-  desc:       { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 },
-  tags:       { display:'flex', flexWrap:'wrap', gap: 8 },
-  uploaderRow:{ display:'flex', alignItems:'center', gap: 8, marginTop: -4 },
-  uploaderAvatar:{ width:20, height:20, borderRadius:'50%', border:'1px solid var(--glass-border)' },
-  uploaderName:{ fontSize:12, color:'var(--text-primary)', fontFamily:'var(--font-mono)' },
-  footer:     { display:'flex', alignItems:'center', justifyContent:'space-between', marginTop: 'auto' },
-  techSpecs:  { display:'flex', gap: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' },
+  card:         { padding: 24, display:'flex', flexDirection:'column', gap: 16 },
+  header:       { display:'flex', alignItems:'center', gap: 16 },
+  iconBox:      { width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))', border: '1px solid var(--glass-border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.2)' },
+  headerText:   { flex: 1, minWidth: 0 },
+  name:         { fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px', marginBottom: 4 },
+  ver:          { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', background: 'var(--accent-dim)', padding: '2px 8px', borderRadius: '8px' },
+  actions:      { display:'flex', gap: 2, background: 'rgba(0,0,0,0.2)', borderRadius: '20px', padding: '4px', border: '1px solid var(--glass-border)' },
+  
+  /* TESTO TRONCATO: La chiave è qui */
+  descPreview:  { 
+    fontSize: 14, 
+    color: 'var(--text-secondary)', 
+    lineHeight: 1.6,
+    display: '-webkit-box',
+    WebkitLineClamp: 2, /* Mostra massimo 2 righe */
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  },
+  
+  tags:         { display:'flex', flexWrap:'wrap', gap: 8 },
+  uploaderRow:  { display:'flex', alignItems:'center', gap: 8, marginTop: -4 },
+  uploaderAvatar: { width:20, height:20, borderRadius:'50%', border:'1px solid var(--glass-border)' },
+  uploaderName: { fontSize:12, color:'var(--text-primary)', fontFamily:'var(--font-mono)' },
+  footer:       { display:'flex', alignItems:'center', justifyContent:'space-between', marginTop: 'auto' },
+  techSpecs:    { display:'flex', gap: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' },
 };
