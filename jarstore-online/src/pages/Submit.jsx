@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useAuth, apiFetch, STATUS_LABELS } from '../hooks/useAuth.jsx';
@@ -10,15 +10,34 @@ export default function Submit() {
   const { user, loading } = useAuth();
   const navigate  = useNavigate();
   const toast     = useToast();
-  const [file,         setFile]         = useState(null);
-  const [name,         setName]         = useState('');
-  const [desc,         setDesc]         = useState('');
-  const [version,      setVersion]      = useState('1.0.0');
-  const [tags,         setTags]         = useState('');
+  
+  const [file, setFile]                 = useState(null);
+  const [name, setName]                 = useState('');
+  const [desc, setDesc]                 = useState('');
+  const [version, setVersion]           = useState('1.0.0');
+  const [tags, setTags]                 = useState('');
   const [contributors, setContributors] = useState('');
-  const [uploading,    setUploading]    = useState(false);
-  const [progress,     setProgress]     = useState(0);
-  const [step,         setStep]         = useState('');
+  
+  // --- STATI PER L'AUTOCOMPLETE ---
+  const [knownUsers, setKnownUsers] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  
+  const [uploading, setUploading]       = useState(false);
+  const [progress, setProgress]         = useState(0);
+  const [step, setStep]                 = useState('');
+
+  // 1. Recupera la lista degli utenti noti all'avvio del componente
+  useEffect(() => {
+    apiFetch('/api/admin/data?type=contributors')
+      .then(data => {
+        // Uniamo admin e contributor e prendiamo solo gli username unici
+        const users = [...(data.admins || []), ...(data.contributors || [])];
+        const usernames = [...new Set(users.map(u => u.github_username))];
+        setKnownUsers(usernames);
+      })
+      .catch(() => {});
+  }, []);
 
   const onDrop = useCallback(accepted => {
     if (accepted[0]) { setFile(accepted[0]); if (!name) setName(accepted[0].name.replace('.jar','')); }
@@ -30,6 +49,39 @@ export default function Submit() {
     maxFiles: 1, maxSize: 100*1024*1024,
     onDropRejected: () => toast.error('Solo .jar fino a 100MB'),
   });
+
+  // 2. Logica che si attiva ogni volta che digiti un collaboratore
+  const handleContributorsChange = (e) => {
+    const val = e.target.value;
+    setContributors(val);
+
+    // Trova la parola che l'utente sta digitando (dopo l'ultima virgola)
+    const parts = val.split(',');
+    const currentWord = parts[parts.length - 1].trim().replace('@', '');
+
+    if (currentWord.length > 0) {
+      // Filtra gli utenti che contengono le lettere digitate
+      const matches = knownUsers.filter(u => u.toLowerCase().includes(currentWord.toLowerCase()));
+      setFilteredSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  // 3. Logica per applicare il suggerimento cliccato
+  const acceptSuggestion = (username) => {
+    const parts = contributors.split(',');
+    parts.pop(); // Rimuoviamo il frammento incompleto appena digitato
+    
+    // Ricostruiamo la stringa con il nuovo utente formattato bene
+    const newVal = parts.length > 0
+      ? parts.map(p => p.trim()).join(', ') + `, @${username}, `
+      : `@${username}, `;
+      
+    setContributors(newVal);
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = async () => {
     if (!file)        return toast.error('Seleziona un file .jar');
@@ -77,7 +129,7 @@ export default function Submit() {
 
   const sl = STATUS_LABELS[user.user_status];
   const maxP = user.user_status==='whitelisted' ? 5 : user.user_status==='active' ? 2 : null;
-  const dropBorder = isDragReject?'var(--danger)':isDragActive?'var(--accent)':file?'var(--success)':'var(--border)';
+  const dropBorder = isDragReject?'var(--danger)':isDragActive?'var(--accent)':file?'var(--success)':'var(--glass-border)';
 
   return (
     <>
@@ -93,12 +145,10 @@ export default function Submit() {
 
         {/* Banner status */}
         {['whitelisted','admin','superadmin'].includes(user.user_status) && (
-          <div style={{...S.banner, borderColor:'rgba(63,185,80,0.3)', background:'rgba(63,185,80,0.06)'}} className="fade-up">
+          <div style={{...S.banner, borderColor:'rgba(48, 209, 88, 0.3)', background:'rgba(48, 209, 88, 0.06)'}} className="fade-up">
             <CheckCircle size={15} color="var(--success)"/>
             <span style={{fontSize:13,color:'var(--success)'}}>
-              Account <strong>{sl?.label}</strong>
-              {maxP && ` — max ${maxP} progetti approvati`}
-              {!maxP && ' — nessun limite'}
+              Account <strong>{sl?.label}</strong> {maxP ? ` — max ${maxP} progetti approvati` : ' — nessun limite'}
             </span>
           </div>
         )}
@@ -106,14 +156,13 @@ export default function Submit() {
           <div style={S.banner} className="fade-up">
             <AlertCircle size={15} color="var(--warning)"/>
             <span style={{fontSize:13,color:'var(--text-secondary)'}}>
-              Account <strong style={{color:'var(--warning)'}}>Utente</strong> — max 2 progetti approvati · 1 in revisione alla volta
+              Account <strong style={{color:'var(--warning)'}}>Utente</strong> — max 2 progetti approvati · 1 in revisione
             </span>
           </div>
         )}
 
-        <div className="card fade-up" style={{padding:24,display:'flex',flexDirection:'column',gap:14,marginTop:14}}>
-          {/* Dropzone */}
-          <div {...getRootProps()} style={{...S.drop,borderColor:dropBorder,background:isDragActive?'var(--accent-dim)':file?'rgba(63,185,80,0.06)':'var(--bg-base)'}}>
+        <div className="card fade-up glass" style={{padding:24,display:'flex',flexDirection:'column',gap:14,marginTop:14}}>
+          <div {...getRootProps()} style={{...S.drop,borderColor:dropBorder,background:isDragActive?'var(--accent-dim)':file?'rgba(48, 209, 88, 0.06)':'var(--glass-bg)'}}>
             <input {...getInputProps()}/>
             {file ? (
               <div style={{display:'flex',alignItems:'center',gap:12,width:'100%',flexWrap:'wrap'}}>
@@ -129,15 +178,14 @@ export default function Submit() {
             ) : (
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,pointerEvents:'none'}}>
                 <Upload size={32} color={isDragActive?'var(--accent)':'var(--text-muted)'}/>
-                <p style={{fontFamily:'var(--font-mono)',fontSize:13,color:'var(--text-secondary)'}}>
-                  {isDragActive ? 'Rilascia il .jar' : 'Trascina il .jar qui'}
+                <p style={{fontFamily:'var(--font-sans)',fontSize:13,color:'var(--text-secondary)'}}>
+                  {isDragActive ? 'Rilascia il .jar' : 'Trascina il .jar qui o clicca per esplorare'}
                 </p>
-                <p style={{fontSize:11,color:'var(--text-muted)'}}>o clicca · max 100 MB</p>
+                <p style={{fontSize:11,color:'var(--text-muted)'}}>MAX 100 MB</p>
               </div>
             )}
           </div>
 
-          {/* Campi */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 120px',gap:10}} className="form-two-col">
             <div style={S.field}>
               <label style={S.label}>Nome *</label>
@@ -156,19 +204,38 @@ export default function Submit() {
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}} className="form-two-col">
             <div style={S.field}>
-              <label style={S.label}>Tag <span style={{fontWeight:400,color:'var(--text-muted)'}}>( , separati)</span></label>
+              <label style={S.label}>Tag (virgola)</label>
               <input className="input" placeholder="gioco, utility…" value={tags} onChange={e=>setTags(e.target.value)}/>
             </div>
-            <div style={S.field}>
-              <label style={S.label}>Collaboratori <span style={{fontWeight:400,color:'var(--text-muted)'}}>( , separati)</span></label>
-              <input className="input" placeholder="@utente1, @utente2…" value={contributors} onChange={e=>setContributors(e.target.value)}/>
+            
+            {/* CAMPO COLLABORATORI CON AUTOCOMPLETE */}
+            <div style={{...S.field, position: 'relative'}}>
+              <label style={S.label}>Collaboratori (virgola)</label>
+              <input 
+                className="input" 
+                placeholder="@utente1, @utente2..." 
+                value={contributors} 
+                onChange={handleContributorsChange}
+                // Il timeout serve per non chiudere il menu prima che l'utente abbia cliccato
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} 
+                onFocus={handleContributorsChange}
+              />
+              
+              {showSuggestions && (
+                <div className="suggestions-dropdown">
+                  {filteredSuggestions.map(u => (
+                    <div key={u} className="suggestion-item" onClick={() => acceptSuggestion(u)}>
+                      @{u}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Progress */}
           {uploading && (
             <div>
-              <div style={{height:5,background:'var(--bg-elevated)',borderRadius:3,overflow:'hidden'}}>
+              <div style={{height:5,background:'var(--glass-border)',borderRadius:3,overflow:'hidden'}}>
                 <div style={{height:'100%',width:`${progress}%`,background:'linear-gradient(90deg,var(--accent),var(--accent2))',borderRadius:3,transition:'width .2s'}}/>
               </div>
               <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>
@@ -188,7 +255,7 @@ export default function Submit() {
 }
 
 const S = {
-  banner: { display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'rgba(210,153,34,0.06)', border:'1px solid rgba(210,153,34,0.25)', borderRadius:'var(--radius-md)', marginBottom:0 },
+  banner: { display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:'var(--radius-md)', marginBottom:0 },
   drop:   { border:'2px dashed', borderRadius:'var(--radius-md)', padding:'24px 16px', cursor:'pointer', transition:'all var(--transition)', minHeight:110, display:'flex', alignItems:'center', justifyContent:'center' },
   field:  { display:'flex', flexDirection:'column', gap:5 },
   label:  { fontSize:11, fontWeight:600, color:'var(--text-secondary)', letterSpacing:'.04em', textTransform:'uppercase' },
