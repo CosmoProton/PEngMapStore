@@ -22,7 +22,7 @@ export default function AuthCallback() {
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
       <div className="spinner" style={{width:32,height:32,borderWidth:3}}/>
-      <p style={{color:'var(--text-secondary)',fontFamily:'var(--font-mono)',fontSize:14}}>Accesso in corso…</p>
+      <p style={{color:'var(--text-secondary)',fontFamily:'var(--font-mono)',fontSize:14}}>Signing in…</p>
     </div>
   );
 }

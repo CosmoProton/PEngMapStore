@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const fmtSize = b => b ? (b>=1048576 ? `${(b/1048576).toFixed(1)} MB` : `${(b/1024).toFixed(0)} KB`) : '—';
-const fmtDate = s => new Date(s).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
+const fmtDate = s => new Date(s).toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'});
 
 export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
   const { user } = useAuth();
@@ -24,7 +24,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
 
   const tags = program.tags ? program.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
   
-  // FIX: Pulizia per evitare doppie @@ (rimuoviamo @ se già presente)
+  // FIX: Cleanup to avoid double @@ (remove @ if already present)
   const contributors = program.contributors 
     ? program.contributors.split(',').map(t=>t.trim().replace(/^@/, '')).filter(Boolean) 
     : [];
@@ -36,7 +36,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
       const a = document.createElement('a');
       a.href = url; a.download = program.original_name; a.click();
       onDownload?.();
-    } catch (e) { alert('Errore: ' + e.message); }
+    } catch (e) { alert('Error: ' + e.message); }
     finally { setTimeout(()=>setDownloading(false), 1500); }
   };
 
@@ -45,7 +45,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
       await apiFetch(`/api/programs/manage?id=${program.id}`, { method:'DELETE' });
       setShowDelConf(false);
       onDelete?.(program.id);
-    } catch(e) { alert('Errore: ' + e.message); }
+    } catch(e) { alert('Error: ' + e.message); }
   };
 
   const handleSave = async () => {
@@ -60,7 +60,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
       });
       setEditing(false);
       onUpdate?.();
-    } catch(e) { alert('Errore: ' + e.message); }
+    } catch(e) { alert('Error: ' + e.message); }
     finally { setSaving(false); }
   };
 
@@ -80,17 +80,17 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               <button className="btn btn-ghost btn-sm" style={{padding:'4px'}} onClick={()=>setEditing(false)}><X size={16}/></button>
             </div>
             
-            <input className="input" style={{fontSize:13}} value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Nome"/>
-            <textarea className="textarea" style={{fontSize:13,minHeight:120, fontFamily:'var(--font-mono)'}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Descrizione completa (Markdown)"/>
+            <input className="input" style={{fontSize:13}} value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Name"/>
+            <textarea className="textarea" style={{fontSize:13,minHeight:120, fontFamily:'var(--font-mono)'}} value={editDesc} onChange={e=>setEditDesc(e.target.value)} placeholder="Full description (Markdown)"/>
             
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-              <input className="input" style={{fontSize:13}} value={editVersion} onChange={e=>setEditVersion(e.target.value)} placeholder="Versione"/>
-              <input className="input" style={{fontSize:13}} value={editTags} onChange={e=>setEditTags(e.target.value)} placeholder="Tag (virgola)"/>
+              <input className="input" style={{fontSize:13}} value={editVersion} onChange={e=>setEditVersion(e.target.value)} placeholder="Version"/>
+              <input className="input" style={{fontSize:13}} value={editTags} onChange={e=>setEditTags(e.target.value)} placeholder="Tags (comma separated)"/>
             </div>
-            <input className="input" style={{fontSize:13}} value={editContribs} onChange={e=>setEditContribs(e.target.value)} placeholder="Collaboratori (virgola)"/>
+            <input className="input" style={{fontSize:13}} value={editContribs} onChange={e=>setEditContribs(e.target.value)} placeholder="Collaborators (comma separated)"/>
             
             <button className="btn btn-primary btn-sm" style={{justifyContent:'center', marginTop:8}} onClick={handleSave} disabled={saving}>
-              {saving ? <span className="spinner" style={{width:13,height:13}}/> : <Check size={14}/>} Salva Modifiche
+              {saving ? <span className="spinner" style={{width:13,height:13}}/> : <Check size={14}/>} Save Changes
             </button>
           </div>
         ) : (
@@ -107,15 +107,15 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               {canManage && (
                 <div style={S.actions}>
                   <button className="btn btn-ghost btn-sm" style={{padding: '6px'}} onClick={()=>setEditing(true)} title="Modifica"><Edit2 size={14}/></button>
-                  <button className="btn btn-ghost btn-sm" style={{padding: '6px', color: 'var(--danger)'}} onClick={()=>setShowDelConf(true)} title="Elimina"><Trash2 size={14}/></button>
+                  <button className="btn btn-ghost btn-sm" style={{padding: '6px', color: 'var(--danger)'}} onClick={()=>setShowDelConf(true)} title="Delete"><Trash2 size={14}/></button>
                 </div>
               )}
             </div>
 
-            {/* ANTEPRIMA MARKDOWN */}
+            {/* MARKDOWN PREVIEW */}
             <div style={S.descPreview} className="markdown-preview">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {program.description || 'Nessuna descrizione fornita.'}
+                {program.description || 'No description provided.'}
               </ReactMarkdown>
             </div>
             
@@ -155,7 +155,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
         )}
       </div>
 
-      {/* MODALE INFO CON MARKDOWN COMPLETO */}
+      {/* INFO MODAL WITH FULL MARKDOWN */}
       {showInfo && (
         <div className="modal-overlay" onClick={()=>setShowInfo(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth: 600, maxHeight: '85vh', display: 'flex', flexDirection: 'column'}}>
@@ -169,14 +169,14 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
             </div>
             
             <div style={{flex: 1, overflowY: 'auto', paddingRight: 8, marginBottom: 20}} className="full-markdown-container">
-              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 12, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Descrizione Completa</h4>
+              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 12, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Full Description</h4>
               <div style={{color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.6, marginBottom: 24}}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {program.description || "Nessuna descrizione fornita dall'autore."}
+                  {program.description || "No description provided by the author."}
                 </ReactMarkdown>
               </div>
 
-              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>Esecuzione</h4>
+              <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>How to run</h4>
               <code style={{display:'block',padding:'14px',background:'rgba(0,0,0,0.4)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,wordBreak:'break-all', color: 'var(--text-primary)', fontFamily:'var(--font-mono)'}}>
                 <span style={{color: 'var(--accent)'}}>$</span> java -jar {program.original_name}
               </code>
@@ -185,7 +185,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
             <div style={{display:'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: 16, flexWrap: 'wrap', gap: 16}}>
               <div style={{flex: 1, minWidth: 200}}>
                 <div style={{display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 12, marginBottom: 4}}>
-                  <Users size={14}/> <span>Team di sviluppo</span>
+                  <Users size={14}/> <span>Development team</span>
                 </div>
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
                   <span className="badge badge-gray">@{program.uploader} (Uploader)</span>
@@ -197,7 +197,7 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
               
               <button className="btn btn-primary" onClick={()=>{handleDownload();setShowInfo(false);}} disabled={downloading}>
                 {downloading ? <span className="spinner" style={{width:16,height:16}}/> : <Download size={16}/>}
-                Scarica .jar
+                Download .jar
               </button>
             </div>
 
@@ -205,17 +205,17 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
         </div>
       )}
 
-      {/* Conferma eliminazione */}
+      {/* Delete confirmation */}
       {showDelConf && (
         <div className="modal-overlay" onClick={()=>setShowDelConf(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth: 400}}>
-            <h3 style={{fontFamily:'var(--font-mono)',marginBottom:16}}>Elimina {program.name}?</h3>
+            <h3 style={{fontFamily:'var(--font-mono)',marginBottom:16}}>Delete {program.name}?</h3>
             <p style={{fontSize:14,color:'var(--text-secondary)',marginBottom:24, lineHeight:1.5}}>
-              Il file verrà rimosso in modo permanente dal server. Questa azione è <strong>irreversibile</strong>.
+              The file will be permanently removed from the server. This action is <strong>irreversible</strong>.
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
-              <button className="btn btn-ghost" onClick={()=>setShowDelConf(false)}>Annulla</button>
-              <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={14}/> Elimina</button>
+              <button className="btn btn-ghost" onClick={()=>setShowDelConf(false)}>Cancel</button>
+              <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={14}/> Delete</button>
             </div>
           </div>
         </div>

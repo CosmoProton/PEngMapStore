@@ -5,11 +5,11 @@ import { useToast } from '../hooks/useToast.js';
 import { ToastContainer } from '../components/ToastContainer.jsx';
 import { CheckCircle, XCircle, Users, Package, Download, Clock, Shield, Ban, Star, StarOff, RefreshCw, HardDrive, AlertTriangle, UserCheck, FileText, Trash2 } from 'lucide-react';
 
-const fmtDate = s => new Date(s).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
+const fmtDate = s => new Date(s).toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'});
 const accountAge = d => {
   if (!d) return '?';
   const days = Math.floor((Date.now()-new Date(d))/86400000);
-  return days>=365 ? `${Math.floor(days/365)}a` : `${days}g`;
+  return days>=365 ? `${Math.floor(days/365)}y` : `${days}d`;
 };
 
 export default function Admin() {
@@ -59,7 +59,7 @@ export default function Admin() {
   const reviewProgram = async (id, action) => {
     try {
       await apiFetch('/api/admin/queue', { method:'POST', body:JSON.stringify({ id, action, note:noteMap[id]||'' }) });
-      toast.success(action==='approve' ? '✅ Approvato!' : '❌ Rifiutato');
+      toast.success(action==='approve' ? '✅ Approved!' : '❌ Rejected');
       setQueue(q => ({ ...q, programs: q.programs.filter(p=>p.id!==id) }));
     } catch(e) { toast.error(e.message); }
   };
@@ -67,7 +67,7 @@ export default function Admin() {
   const userAction = async (id, action, reason) => {
     try {
       await apiFetch('/api/admin/users', { method:'PATCH', body:JSON.stringify({ id, action, reason }) });
-      toast.success('Utente aggiornato');
+      toast.success('User updated');
       if (tab==='queue') fetchQueue();
       else fetchUsers();
     } catch(e) { toast.error(e.message); }
@@ -92,11 +92,11 @@ export default function Admin() {
               <span style={{color:'var(--accent)'}}>{'//'} </span>Admin Panel
             </h1>
             <p style={{color:'var(--text-muted)',fontSize:12,marginTop:4,fontFamily:'var(--font-mono)'}}>
-              Revisione · Utenti · Statistiche
+              Review · Users · Statistics
             </p>
             {isTeacher && (
               <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8,padding:'6px 12px',background:'rgba(210,153,34,0.06)',border:'1px solid rgba(210,153,34,0.25)',borderRadius:'var(--radius-sm)'}}>
-                <span style={{fontSize:12,color:'var(--warning)'}}>👁 Modalità Teacher — sola lettura, nessuna modifica consentita</span>
+                <span style={{fontSize:12,color:'var(--warning)'}}>👁 Teacher Mode — read-only, no changes allowed</span>
               </div>
             )}
           </div>
@@ -108,8 +108,8 @@ export default function Admin() {
         {/* Tabs */}
         <div style={S.tabs} className="admin-tabs fade-up">
           {[
-            { key:'queue', label:'Coda', icon:<Clock size={14}/>, badge:totalQueueBadge||null },
-            { key:'users', label:'Utenti', icon:<Users size={14}/> },
+            { key:'queue', label:'Queue', icon:<Clock size={14}/>, badge:totalQueueBadge||null },
+            { key:'users', label:'Users', icon:<Users size={14}/> },
             { key:'stats', label:'Stats', icon:<Package size={14}/> },
             { key:'log', label:'Log', icon:<FileText size={14}/> },
           ].map(t=>(
@@ -127,7 +127,7 @@ export default function Admin() {
             {queue.pendingUsers?.length > 0 && (
               <div style={{marginBottom:24}}>
                 <h3 style={{fontFamily:'var(--font-mono)',fontSize:13,color:'var(--warning)',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-                  <UserCheck size={15}/>NUOVI ACCOUNT DA APPROVARE ({queue.pendingUsers.length})
+                  <UserCheck size={15}/>NEW ACCOUNTS TO APPROVE ({queue.pendingUsers.length})
                 </h3>
                 {queue.pendingUsers.map(u=>(
                   <div key={u.id} className="card" style={{padding:'14px 16px',marginBottom:8}}>
@@ -136,15 +136,15 @@ export default function Admin() {
                       <div style={{flex:1,minWidth:0}}>
                         <span style={{fontFamily:'var(--font-mono)',fontSize:13,fontWeight:700}}>@{u.github_username}</span>
                         <span style={{fontSize:11,color:'var(--text-muted)',marginLeft:10}}>
-                          account: {accountAge(u.github_created_at)} · {u.github_public_repos} repo · iscritto {fmtDate(u.created_at)}
+                          account: {accountAge(u.github_created_at)} · {u.github_public_repos} repos · joined {fmtDate(u.created_at)}
                         </span>
                       </div>
                       <div style={{display:'flex',gap:6,flexShrink:0}}>
-                        {isFullAdmin && <button className="btn btn-danger btn-sm" onClick={()=>userAction(u.id,'ban','Account non approvato')}>
-                          <XCircle size={13}/>Rifiuta
+                        {isFullAdmin && <button className="btn btn-danger btn-sm" onClick={()=>userAction(u.id,'ban','Account not approved')}>
+                          <XCircle size={13}/>Reject
                         </button>}
                         {isFullAdmin && <button className="btn btn-success btn-sm" onClick={()=>userAction(u.id,'approve')}>
-                          <CheckCircle size={13}/>Approva
+                          <CheckCircle size={13}/>Approve
                         </button>}
                       </div>
                     </div>
@@ -155,10 +155,10 @@ export default function Admin() {
 
             {/* Programmi pending */}
             <h3 style={{fontFamily:'var(--font-mono)',fontSize:13,color:'var(--text-muted)',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-              <Package size={15}/>PROGRAMMI IN ATTESA ({queue.programs?.length||0})
+              <Package size={15}/>PENDING PROGRAMS ({queue.programs?.length||0})
             </h3>
             {queue.programs?.length===0 ? (
-              <div style={S.empty}><CheckCircle size={36} color="var(--success)"/><p style={{color:'var(--text-secondary)',marginTop:10,fontSize:14}}>Nessun programma in coda</p></div>
+              <div style={S.empty}><CheckCircle size={36} color="var(--success)"/><p style={{color:'var(--text-secondary)',marginTop:10,fontSize:14}}>No programs in queue</p></div>
             ) : queue.programs.map(p=>(
               <div key={p.id} className="card" style={{padding:16,marginBottom:10}}>
                 <div style={{display:'flex',gap:12,marginBottom:10,alignItems:'flex-start'}}>
@@ -178,17 +178,17 @@ export default function Admin() {
                   <img src={p.uploader_avatar||'https://github.com/ghost.png'} style={{width:22,height:22,borderRadius:'50%'}} alt=""/>
                   <span style={{fontFamily:'var(--font-mono)',fontSize:12}}>@{p.uploader}</span>
                   <span style={{fontSize:11,color:'var(--text-muted)',marginLeft:4}}>
-                    {accountAge(p.uploader_created)} · {p.uploader_repos} repo
+                    {accountAge(p.uploader_created)} · {p.uploader_repos} repos
                   </span>
                   <span style={{fontSize:11,color:'var(--text-muted)',marginLeft:'auto'}}>{fmtDate(p.created_at)}</span>
                 </div>
                 <div style={{display:'flex',gap:8,alignItems:'flex-end',flexWrap:'wrap'}} className="queue-actions">
                   <div style={{flex:1,minWidth:160}}>
-                    <input className="input" style={{fontSize:13}} placeholder="Nota admin (opzionale)…"
+                    <input className="input" style={{fontSize:13}} placeholder="Admin note (optional)…"
                       value={noteMap[p.id]||''} onChange={e=>setNoteMap(m=>({...m,[p.id]:e.target.value}))}/>
                   </div>
-                  {isFullAdmin && <button className="btn btn-danger btn-sm" onClick={()=>reviewProgram(p.id,'reject')}><XCircle size={14}/>Rifiuta</button>}
-                  {isFullAdmin && <button className="btn btn-success btn-sm" onClick={()=>reviewProgram(p.id,'approve')}><CheckCircle size={14}/>Approva</button>}
+                  {isFullAdmin && <button className="btn btn-danger btn-sm" onClick={()=>reviewProgram(p.id,'reject')}><XCircle size={14}/>Reject</button>}
+                  {isFullAdmin && <button className="btn btn-success btn-sm" onClick={()=>reviewProgram(p.id,'approve')}><CheckCircle size={14}/>Approve</button>}
                 </div>
               </div>
             ))}
@@ -212,46 +212,46 @@ export default function Admin() {
                         <span className={`badge ${sl.cls||'badge-gray'}`}>{sl.label||u.user_status}</span>
                       </div>
                       <span style={{fontSize:11,color:'var(--text-muted)'}}>
-                        {accountAge(u.github_created_at)} · {u.github_public_repos} repo · iscritto {fmtDate(u.created_at)}
+                        {accountAge(u.github_created_at)} · {u.github_public_repos} repos · joined {fmtDate(u.created_at)}
                       </span>
                       {u.user_status==='banned'&&u.ban_reason&&<p style={{fontSize:11,color:'var(--danger)',marginTop:2}}>Ban: {u.ban_reason}</p>}
                     </div>
                     {!isSelf && !isSuperadmin && (
                       <div style={{display:'flex',gap:5,flexWrap:'wrap',flexShrink:0}}>
                         {u.user_status==='pending' && <>
-                          <button className="btn btn-danger btn-sm" onClick={()=>userAction(u.id,'ban','Non approvato')}><XCircle size={13}/>Rifiuta</button>
-                          <button className="btn btn-success btn-sm" onClick={()=>userAction(u.id,'approve')}><CheckCircle size={13}/>Approva</button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>userAction(u.id,'ban','Not approved')}><XCircle size={13}/>Reject</button>
+                          <button className="btn btn-success btn-sm" onClick={()=>userAction(u.id,'approve')}><CheckCircle size={13}/>Approve</button>
                         </>}
                         {u.user_status==='active' && <>
-                          <button className="btn btn-ghost btn-sm" style={{color:'var(--success)',borderColor:'rgba(63,185,80,0.3)'}} onClick={()=>userAction(u.id,'whitelist')}><Star size={13}/>Verifica</button>
-                          {isFullAdmin && <button className="btn btn-ghost btn-sm" style={{color:'var(--accent)',borderColor:'rgba(0,210,255,0.3)'}} onClick={()=>{if(confirm('Promuovi ad admin?')) userAction(u.id,'makeadmin')}}><Shield size={13}/>Admin</button>}
+                          <button className="btn btn-ghost btn-sm" style={{color:'var(--success)',borderColor:'rgba(63,185,80,0.3)'}} onClick={()=>userAction(u.id,'whitelist')}><Star size={13}/>Verify</button>
+                          {isFullAdmin && <button className="btn btn-ghost btn-sm" style={{color:'var(--accent)',borderColor:'rgba(0,210,255,0.3)'}} onClick={()=>{if(confirm('Promote to admin?')) userAction(u.id,'makeadmin')}}><Shield size={13}/>Admin</button>}
                           <BanBtn u={u} onBan={r=>userAction(u.id,'ban',r)}/>
                         </>}
                         {u.user_status==='whitelisted' && isFullAdmin && <>
-                          <button className="btn btn-ghost btn-sm" onClick={()=>userAction(u.id,'unwhitelist')}><StarOff size={13}/>Rimuovi verifica</button>
-                          {isFullAdmin && <button className="btn btn-ghost btn-sm" style={{color:'var(--accent)',borderColor:'rgba(0,210,255,0.3)'}} onClick={()=>{if(confirm('Promuovi ad admin?')) userAction(u.id,'makeadmin')}}><Shield size={13}/>Admin</button>}
+                          <button className="btn btn-ghost btn-sm" onClick={()=>userAction(u.id,'unwhitelist')}><StarOff size={13}/>Remove verify</button>
+                          {isFullAdmin && <button className="btn btn-ghost btn-sm" style={{color:'var(--accent)',borderColor:'rgba(0,210,255,0.3)'}} onClick={()=>{if(confirm('Promote to admin?')) userAction(u.id,'makeadmin')}}><Shield size={13}/>Admin</button>}
                           <BanBtn u={u} onBan={r=>userAction(u.id,'ban',r)}/>
                         </>}
                         {u.user_status==='admin' && isFullAdmin && <>
-                          <button className="btn btn-ghost btn-sm" onClick={()=>{if(confirm('Rimuovi admin?')) userAction(u.id,'removeadmin')}}><Shield size={13}/>Rimuovi admin</button>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>{if(confirm('Remove admin?')) userAction(u.id,'removeadmin')}}><Shield size={13}/>Remove admin</button>
                           <BanBtn u={u} onBan={r=>userAction(u.id,'ban',r)}/>
                         </>}
                         {isFullAdmin && u.user_status==='active' && (
-                          <button className="btn btn-ghost btn-sm" style={{color:'var(--warning)',borderColor:'rgba(210,153,34,0.3)'}} onClick={()=>{if(confirm('Imposta come teacher?')) userAction(u.id,'maketeacher')}}><Shield size={13}/>Teacher</button>
+                          <button className="btn btn-ghost btn-sm" style={{color:'var(--warning)',borderColor:'rgba(210,153,34,0.3)'}} onClick={()=>{if(confirm('Set as teacher?')) userAction(u.id,'maketeacher')}}><Shield size={13}/>Teacher</button>
                         )}
                         {isFullAdmin && u.user_status==='teacher' && (
-                          <button className="btn btn-ghost btn-sm" onClick={()=>userAction(u.id,'removeteacher')}><Shield size={13}/>Rimuovi teacher</button>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>userAction(u.id,'removeteacher')}><Shield size={13}/>Remove teacher</button>
                         )}
                         {isFullAdmin && (
                           <button className="btn btn-ghost btn-sm" style={{color:u.is_contributor?'var(--danger)':'#3ecf8e',borderColor:u.is_contributor?'rgba(248,81,73,0.3)':'rgba(62,207,142,0.3)'}}
                             onClick={()=>userAction(u.id, u.is_contributor?'unsetcontributor':'setcontributor')}>
-                            {u.is_contributor ? <><StarOff size={13}/>Rimuovi contributor</> : <><Star size={13}/>Aggiungi contributor</>}
+                            {u.is_contributor ? <><StarOff size={13}/>Remove contributor</> : <><Star size={13}/>Add contributor</>}
                           </button>
                         )}
-                        {u.user_status==='banned' && <button className="btn btn-ghost btn-sm" onClick={()=>userAction(u.id,'unban')}><CheckCircle size={13}/>Riabilita</button>}
+                        {u.user_status==='banned' && <button className="btn btn-ghost btn-sm" onClick={()=>userAction(u.id,'unban')}><CheckCircle size={13}/>Re-enable</button>}
                       </div>
                     )}
-                    {(isSelf||isSuperadmin) && <span style={{fontSize:11,color:'var(--text-muted)'}}>{isSuperadmin?'⭐ superadmin':'(tu)'}</span>}
+                    {(isSelf||isSuperadmin) && <span style={{fontSize:11,color:'var(--text-muted)'}}>{isSuperadmin?'⭐ superadmin':'(you)'}</span>}
                   </div>
                 </div>
               );
@@ -263,10 +263,10 @@ export default function Admin() {
         {tab==='log' && (
           <div className="fade-up">
             <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:16,fontFamily:'var(--font-mono)'}}>
-              Storico programmi revisionati — note visibili solo agli admin
+              History of reviewed programs — notes visible to admins only
             </p>
             {log.length===0 ? (
-              <div style={S.empty}><FileText size={36} color="var(--text-muted)"/><p style={{color:'var(--text-secondary)',marginTop:10,fontSize:14}}>Nessun log ancora</p></div>
+              <div style={S.empty}><FileText size={36} color="var(--text-muted)"/><p style={{color:'var(--text-secondary)',marginTop:10,fontSize:14}}>No logs yet</p></div>
             ) : log.map(p=>(
               <div key={p.id} className="card" style={{padding:'14px 16px',marginBottom:8}}>
                 <div style={{display:'flex',alignItems:'flex-start',gap:12,flexWrap:'wrap'}}>
@@ -274,7 +274,7 @@ export default function Admin() {
                     <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4}}>
                       <span style={{fontFamily:'var(--font-mono)',fontSize:13,fontWeight:700}}>{p.name}</span>
                       <span style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--accent)'}}>v{p.version}</span>
-                      <span className={`badge ${p.status==='approved'?'badge-green':'badge-red'}`}>{p.status==='approved'?'✅ Approvato':'❌ Rifiutato'}</span>
+                      <span className={`badge ${p.status==='approved'?'badge-green':'badge-red'}`}>{p.status==='approved'?'✅ Approved':'❌ Rejected'}</span>
                     </div>
                     <div style={{display:'flex',gap:10,fontSize:11,color:'var(--text-muted)',flexWrap:'wrap'}}>
                       <span>📁 {p.original_name}</span>
@@ -283,21 +283,21 @@ export default function Admin() {
                     </div>
                     {p.admin_note && (
                       <div style={{marginTop:8,padding:'8px 10px',background:'var(--bg-elevated)',borderRadius:'var(--radius-sm)',borderLeft:'3px solid var(--warning)'}}>
-                        <span style={{fontSize:11,color:'var(--warning)',fontWeight:600,fontFamily:'var(--font-mono)'}}>NOTA ADMIN: </span>
+                        <span style={{fontSize:11,color:'var(--warning)',fontWeight:600,fontFamily:'var(--font-mono)'}}>ADMIN NOTE: </span>
                         <span style={{fontSize:12,color:'var(--text-secondary)'}}>{p.admin_note}</span>
                       </div>
                     )}
                   </div>
                   <button className="btn btn-danger btn-sm" style={{flexShrink:0}}
                     onClick={async()=>{
-                      if(!confirm('Eliminare definitivamente?')) return;
+                      if(!confirm('Delete permanently?')) return;
                       try {
                         await apiFetch('/api/programs/manage?id='+p.id, {method:'DELETE'});
                         setLog(l=>l.filter(x=>x.id!==p.id));
-                        toast.success('Eliminato');
+                        toast.success('Deleted');
                       } catch(e) { toast.error(e.message); }
                     }}>
-                    <Trash2 size={13}/>Elimina
+                    <Trash2 size={13}/>Delete
                   </button>
                 </div>
               </div>
@@ -313,7 +313,7 @@ export default function Admin() {
               <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',background:'rgba(248,81,73,0.06)',border:'1px solid rgba(248,81,73,0.3)',borderRadius:'var(--radius-md)',marginBottom:20}}>
                 <AlertTriangle size={16} color="var(--danger)"/>
                 <span style={{fontSize:13,color:'var(--danger)'}}>
-                  <strong>Storage al {stats.storagePct}%!</strong> Usati {stats.storageUsedMB}MB su 1024MB. Libera spazio presto.
+                  <strong>Storage at {stats.storagePct}%!</strong> Used {stats.storageUsedMB}MB of 1024MB. Free up space soon.
                 </span>
               </div>
             )}
@@ -331,14 +331,14 @@ export default function Admin() {
 
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:20}} className="stats-grid">
               {[
-                {label:'Totale utenti',    value:stats.totalUsers,          color:'var(--accent)'},
-                {label:'In attesa',        value:stats.totalPending,        color:'var(--warning)'},
-                {label:'Attivi',           value:stats.totalActive,         color:'var(--success)'},
-                {label:'Verificati',       value:stats.totalWhitelisted,    color:'#3ecf8e'},
-                {label:'Admin',            value:stats.totalAdmins,         color:'#a78bfa'},
-                {label:'Bannati',          value:stats.totalBanned,         color:'var(--danger)'},
-                {label:'Programmi',        value:stats.totalApproved,       color:'var(--accent)'},
-                {label:'In revisione',     value:stats.totalPendingPrograms,color:'var(--warning)'},
+                {label:'Total users',     value:stats.totalUsers,          color:'var(--accent)'},
+                {label:'Pending',         value:stats.totalPending,        color:'var(--warning)'},
+                {label:'Active',          value:stats.totalActive,         color:'var(--success)'},
+                {label:'Verified',        value:stats.totalWhitelisted,    color:'#3ecf8e'},
+                {label:'Admin',           value:stats.totalAdmins,         color:'#a78bfa'},
+                {label:'Banned',          value:stats.totalBanned,         color:'var(--danger)'},
+                {label:'Programs',        value:stats.totalApproved,       color:'var(--accent)'},
+                {label:'Under review',    value:stats.totalPendingPrograms,color:'var(--warning)'},
               ].map(s=>(
                 <div key={s.label} className="card" style={{padding:'12px 14px'}}>
                   <p style={{fontFamily:'var(--font-mono)',fontSize:20,fontWeight:700,color:s.color}}>{s.value??'—'}</p>
@@ -349,7 +349,7 @@ export default function Admin() {
 
             {stats.topDownloads?.length>0 && (
               <div className="card" style={{padding:16}}>
-                <h3 style={{fontFamily:'var(--font-mono)',fontSize:13,marginBottom:12}}>Top download</h3>
+                <h3 style={{fontFamily:'var(--font-mono)',fontSize:13,marginBottom:12}}>Top downloads</h3>
                 {stats.topDownloads.map((p,i)=>(
                   <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)'}}>
                     <span style={{fontSize:13}}>{p.name}</span>
@@ -371,15 +371,15 @@ function BanBtn({ u, onBan }) {
   const [reason, setReason] = useState('');
   return (
     <>
-      <button className="btn btn-danger btn-sm" onClick={()=>setOpen(true)}><Ban size={13}/>Banna</button>
+      <button className="btn btn-danger btn-sm" onClick={()=>setOpen(true)}><Ban size={13}/>Ban</button>
       {open && (
         <div className="modal-overlay" onClick={()=>setOpen(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <h3 style={{fontFamily:'var(--font-mono)',marginBottom:14}}>Banna @{u.github_username}</h3>
-            <input className="input" placeholder="Motivo del ban…" value={reason} onChange={e=>setReason(e.target.value)} autoFocus/>
+            <h3 style={{fontFamily:'var(--font-mono)',marginBottom:14}}>Ban @{u.github_username}</h3>
+            <input className="input" placeholder="Reason for ban…" value={reason} onChange={e=>setReason(e.target.value)} autoFocus/>
             <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:16}}>
-              <button className="btn btn-ghost btn-sm" onClick={()=>setOpen(false)}>Annulla</button>
-              <button className="btn btn-danger btn-sm" onClick={()=>{onBan(reason);setOpen(false);}}>Conferma</button>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setOpen(false)}>Cancel</button>
+              <button className="btn btn-danger btn-sm" onClick={()=>{onBan(reason);setOpen(false);}}>Confirm</button>
             </div>
           </div>
         </div>

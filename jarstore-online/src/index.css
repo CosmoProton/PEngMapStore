@@ -1,39 +1,39 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-  /* Colori Base - Dark Mode in stile Apple */
-  --bg-base: #000000;
-  --bg-surface: rgba(28, 28, 30, 0.4);
-  --bg-elevated: rgba(44, 44, 46, 0.6);
+  /* Base Colors - Educational dark theme (deep navy, less "Apple black") */
+  --bg-base: #0d1117;
+  --bg-surface: rgba(22, 27, 42, 0.5);
+  --bg-elevated: rgba(30, 37, 56, 0.7);
   
   /* Glassmorphism Variables */
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-highlight: rgba(255, 255, 255, 0.14);
   
-  /* Testi */
-  --text-primary: #F5F5F7;
-  --text-secondary: #86868B;
-  --text-muted: #515154;
+  /* Text */
+  --text-primary: #E8EAF0;
+  --text-secondary: #8B92A8;
+  --text-muted: #555D75;
   
-  /* Colori Accent (Neon / iOS) */
-  --accent: #0A84FF;
-  --accent-dim: rgba(10, 132, 255, 0.15);
-  --accent2: #BF5AF2;
-  --accent2-dim: rgba(191, 90, 242, 0.15);
-  --success: #30D158;
-  --warning: #FF9F0A;
-  --danger: #FF453A;
+  /* Accent Colors (educational blue-indigo palette) */
+  --accent: #4F8EF7;
+  --accent-dim: rgba(79, 142, 247, 0.15);
+  --accent2: #A78BFA;
+  --accent2-dim: rgba(167, 139, 250, 0.15);
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
   
-  /* Tipografia */
+  /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace; /* Tocco per i dev */
+  --font-mono: 'JetBrains Mono', monospace;
   
-  /* Struttura */
-  --radius-sm: 14px;
-  --radius-md: 20px;
-  --radius-lg: 28px;
-  --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* Structure */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --transition: 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
   --nav-height: 70px;
 }
 
@@ -48,10 +48,13 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  /* Sfondi sfocati dinamici per far risaltare il vetro */
+  /* Subtle educational notebook-like grid background */
   background-image: 
-    radial-gradient(circle at 15% 30%, rgba(10, 132, 255, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 70%, rgba(48, 209, 88, 0.05) 0%, transparent 40%);
+    radial-gradient(circle at 20% 25%, rgba(79, 142, 247, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 80% 75%, rgba(52, 211, 153, 0.05) 0%, transparent 45%),
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
   background-attachment: fixed;
 }
 
@@ -122,7 +125,7 @@ code {
 }
 .card:hover { 
   border-color: var(--accent); 
-  box-shadow: 0 12px 40px rgba(10, 132, 255, 0.15); /* Aggiunge anche un leggerissimo bagliore blu all'ombra */
+  box-shadow: 0 8px 28px rgba(79, 142, 247, 0.12);
 }
 
 /* Badges (Font monospazio per i dev) */

@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, STATUS_LABELS } from '../hooks/useAuth.jsx';
-import { Package, Shield, LogOut, Home, Info } from 'lucide-react';
+import { BookOpen, Shield, LogOut, Home, Info } from 'lucide-react';
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -13,23 +13,23 @@ export function Navbar() {
     <nav style={S.nav} className="glass">
       <div style={S.inner} className="nav-inner">
         
-        {/* SINISTRA: Logo */}
+        {/* LEFT: Logo */}
         <Link to="/" style={S.logo}>
-          <Package size={24} color="var(--accent)" />
-          <span style={S.logoTxt}>JarStore</span>
+          <BookOpen size={24} color="var(--accent)" />
+          <span style={S.logoTxt}>EngMapStore</span>
         </Link>
         
-        {/* DESTRA: Sezioni + Profilo */}
+        {/* RIGHT: Navigation + Profile */}
         <div style={S.rightSide} className="nav-actions">
           {user ? (
             <>
-              {/* Sezioni del sito (Rimossa la voce "Carica") */}
+              {/* Site navigation */}
               <div style={S.links} className="nav-links">
                 <Link to="/" style={{...S.link, ...(pathname==='/'?S.linkOn:{})}}>
-                  <Home size={16}/> <span className="hide-mobile-text">Programmi</span>
+                  <Home size={16}/> <span className="hide-mobile-text">Programs</span>
                 </Link>
                 <Link to="/contributors" style={{...S.link, ...(pathname==='/contributors'?S.linkOn:{})}}>
-                  <Info size={16}/> <span className="hide-mobile-text">Info</span>
+                  <Info size={16}/> <span className="hide-mobile-text">About</span>
                 </Link>
                 {isAdmin && (
                   <Link to="/admin" style={{...S.link, ...(pathname==='/admin'?S.linkOn:{})}}>
@@ -38,10 +38,10 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* Divisore */}
+              {/* Divider */}
               <div style={S.divider} className="hide-mobile" />
 
-              {/* Profilo utente */}
+              {/* User profile */}
               <div style={S.userArea}>
                 <div style={S.userInfo} className="hide-mobile-text">
                   <span style={S.uname}>{user.github_username}</span>
@@ -54,7 +54,7 @@ export function Navbar() {
               </div>
             </>
           ) : (
-            <Link to="/login" className="btn btn-primary btn-sm">Accedi</Link>
+            <Link to="/login" className="btn btn-primary btn-sm">Sign In</Link>
           )}
         </div>
 
