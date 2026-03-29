@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { Package, AlertCircle, Users } from 'lucide-react';
+import { BookOpen, AlertCircle, Users } from 'lucide-react';
 
 const ERROR_MSG = {
-  banned:      '🚫 Il tuo account è stato sospeso.',
-  full:        '🚫 Il repository ha raggiunto il limite di 40 utenti.',
-  auth_failed: 'Autenticazione fallita. Riprova.',
-  no_code:     'Codice OAuth mancante. Riprova.',
+  banned:      '🚫 Your account has been suspended.',
+  full:        '🚫 The repository has reached the limit of 40 users.',
+  auth_failed: 'Authentication failed. Please try again.',
+  no_code:     'OAuth code missing. Please try again.',
 };
 
 export default function Login() {
@@ -22,26 +22,26 @@ export default function Login() {
       <div style={S.blob1}/><div style={S.blob2}/>
       <div className="card fade-up" style={S.card}>
         <div style={{textAlign:'center'}}>
-          <div style={S.iconBox}><Package size={28} color="var(--accent)"/></div>
-          <h1 style={S.title}>JarStore</h1>
-          <p style={S.sub}>Software Repository</p>
+          <div style={S.iconBox}><BookOpen size={28} color="var(--accent)"/></div>
+          <h1 style={S.title}>EngMapStore</h1>
+          <p style={S.sub}>Student Software Repository</p>
         </div>
         <div className="glow-line" style={{margin:'24px 0'}}/>
-        <h2 style={{fontFamily:'var(--font-mono)',fontSize:18,marginBottom:8}}>Accedi</h2>
+        <h2 style={{fontFamily:'var(--font-mono)',fontSize:18,marginBottom:8}}>Sign In</h2>
         <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:20,lineHeight:1.6}}>
-          Sfoglia e scarica programmi Java. Carica i tuoi progetti per la revisione.
+          Browse and download Java programs. Upload your projects for review.
         </p>
         {error && (
-          <div style={S.errBox}><AlertCircle size={15}/>{ERROR_MSG[error] || 'Si è verificato un errore.'}</div>
+          <div style={S.errBox}><AlertCircle size={15}/>{ERROR_MSG[error] || 'An error occurred.'}</div>
         )}
         <a href="/api/auth/github" style={S.ghBtn}>
-          <GhIcon/> Continua con GitHub
+          <GhIcon/> Continue with GitHub
         </a>
         <div style={S.infoBox}>
           <Users size={14} color="var(--text-muted)"/>
           <p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.6}}>
-            I nuovi account vengono approvati dall'admin prima di poter caricare progetti.<br/>
-            Anti-spam: account GitHub &gt;5 giorni + almeno 1 repo pubblico.
+            New accounts are approved by an admin before uploading projects.<br/>
+            Anti-spam: GitHub account &gt;5 days + at least 1 public repo.
           </p>
         </div>
       </div>

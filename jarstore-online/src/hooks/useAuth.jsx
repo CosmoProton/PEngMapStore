@@ -43,13 +43,13 @@ export async function apiFetch(path, options = {}) {
   return data;
 }
 
-// Helper permessi
+// Permission helpers
 export const STATUS_LABELS = {
-  pending:     { label: 'In attesa',  cls: 'badge-yellow' },
-  active:      { label: 'Utente',     cls: 'badge-cyan'   },
-  whitelisted: { label: 'Verificato', cls: 'badge-green'  },
+  pending:     { label: 'Pending',    cls: 'badge-yellow' },
+  active:      { label: 'User',       cls: 'badge-cyan'   },
+  whitelisted: { label: 'Verified',   cls: 'badge-green'  },
   admin:       { label: 'Admin',      cls: 'badge-purple' },
-  superadmin:  { label: 'Admin',      cls: 'badge-purple' }, // mostrato come Admin nell'UI
+  superadmin:  { label: 'Admin',      cls: 'badge-purple' }, // shown as Admin in UI
   teacher:     { label: 'Teacher',    cls: 'badge-yellow' },
-  banned:      { label: 'Bannato',    cls: 'badge-red'    },
+  banned:      { label: 'Banned',     cls: 'badge-red'    },
 };

@@ -1,29 +1,29 @@
-# 📦 JarStore
+# 📦 EngMapStore
 
-> Repository online di programmi Java — Login con GitHub, revisione admin, anti-spam.
+> Online repository for Java programs — Login with GitHub, admin review, anti-spam.
 
-**Live:** [tuo-progetto.vercel.app](https://tuo-progetto.vercel.app)
+**Live:** [your-app.vercel.app](https://your-app.vercel.app)
 
 ---
 
-## ✨ Funzionalità
+## ✨ Features
 
-- 🔐 **Login con GitHub OAuth**
-- 📤 **Carica i tuoi programmi `.jar`** — vengono messi in coda per revisione
-- ✅ **Admin panel** — approva/rifiuta submission, gestisce utenti
-- 🛡️ **Anti-spam** basato su GitHub (non sull'IP):
-  - Account GitHub deve avere ≥ 5 giorni
-  - Almeno 1 repository pubblico
-  - Max 2 submission ogni 24h
-  - Max 2 submission in attesa contemporaneamente
-- ⭐ **Whitelist** per utenti verificati (nessun limite)
-- 🚫 **Blacklist** admin per bannare utenti
+- 🔐 **Login with GitHub OAuth**
+- 📤 **Upload your `.jar` programs** — queued for review
+- ✅ **Admin panel** — approve/reject submissions, manage users
+- 🛡️ **Anti-spam** based on GitHub (not IP):
+  - GitHub account must be ≥ 5 days old
+  - At least 1 public repository
+  - Max 2 submissions every 24h
+  - Max 2 submissions pending at the same time
+- ⭐ **Whitelist** for verified users (no limit)
+- 🚫 **Blacklist** for admins to ban users
 
 ---
 
 ## 🏗️ Stack
 
-| Layer    | Tecnologia              |
+| Layer    | Technology              |
 |----------|-------------------------|
 | Frontend | React 18 + Vite         |
 | Hosting  | Vercel (serverless)     |
@@ -31,19 +31,19 @@
 | Storage  | Supabase Storage        |
 | Auth     | GitHub OAuth 2.0 + JWT  |
 
-**Costo: 0€** — tutto su piani gratuiti.
+**Cost: $0** — everything on free plans.
 
 ---
 
 ## 🚀 Setup
 
-Vedi [`jarstore-online/README.md`](./jarstore-online/README.md) per le istruzioni complete di deploy.
+See [`jarstore-online/README.md`](./jarstore-online/README.md) for complete deploy instructions.
 
 ---
 
-## 👥 Contributori
+## 👥 Contributors
 
-| | Username | Ruolo |
+| | Username | Role |
 |---|---|---|
 | <img src="https://github.com/CosmoUniverso.png" width="24"/> | [@CosmoUniverso](https://github.com/CosmoUniverso) | Lead Developer |
-| <img src="https://github.com/gabrielerada07.png" width="24"/> | [@gabrielerada07](https://github.com/gabrielerada07) | Collaboratore |
+| <img src="https://github.com/gabrielerada07.png" width="24"/> | [@gabrielerada07](https://github.com/gabrielerada07) | Collaborator |

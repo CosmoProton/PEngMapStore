@@ -2,7 +2,7 @@ const { getSupabase, signToken, SUPERADMIN, MAX_USERS } = require('../_utils');
 
 async function ghGet(url, token) {
   const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'JarStore' },
+    headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'EngMapStore' },
   });
   return r.json();
 }
@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
     const email = (Array.isArray(emails) ? emails.find(e => e.primary)?.email : null) || gu.email || null;
     const sb = getSupabase();
 
-    // Controlla se esiste già
+    // Check if user already exists
     const { data: existing } = await sb
       .from('users')
       .select('id,user_status')
@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
       if (count >= MAX_USERS) return res.redirect(`${APP}/login?error=full`);
     }
 
-    // Superadmin è fisso, altrimenti preserva lo status esistente
+    // Superadmin is fixed, otherwise preserve existing status
     const isSuperadmin = gu.login === SUPERADMIN;
     const user_status  = isSuperadmin ? 'superadmin' : (existing?.user_status || 'pending');
 
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
         github_public_repos: gu.public_repos || 0,
       });
     } else {
-      // Aggiorna solo dati GitHub, MAI user_status
+      // Update only GitHub data, NEVER user_status
       await sb.from('users').update({
         github_username:     gu.login,
         email, avatar_url:   gu.avatar_url,
@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
       .eq('github_id', String(gu.id))
       .single();
 
-    if (!user) throw new Error('Utente non trovato');
+    if (!user) throw new Error('User not found');
     if (user.user_status === 'banned') return res.redirect(`${APP}/login?error=banned`);
 
     const token = signToken({
