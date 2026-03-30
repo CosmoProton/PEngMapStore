@@ -17,7 +17,7 @@ function WelcomePopup({ onClose }) {
         <h2 style={{fontFamily:'var(--font-mono)',fontSize:20,marginBottom:12}}>Account Created! 🎉</h2>
         <p style={{color:'var(--text-secondary)',fontSize:14,lineHeight:1.7,marginBottom:20}}>
           Welcome to EngMapStore!<br/><br/>
-          <strong style={{color:'var(--text-primary)'}}>Before you can upload your projects</strong>, your account needs to be reviewed by an admin.<br/><br/>
+          <strong style={{color:'var(--text-primary)'}}>Before you can upload your maps</strong>, your account needs to be reviewed by an admin.<br/><br/>
           You will receive approval shortly. In the meantime you can browse and download available maps.
         </p>
         <div style={{display:'flex',alignItems:'center',gap:8,justifyContent:'center',padding:'10px 16px',background:'rgba(210,153,34,0.08)',border:'1px solid rgba(210,153,34,0.3)',borderRadius:'var(--radius-md)',marginBottom:20}}>
