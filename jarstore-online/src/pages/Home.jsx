@@ -91,7 +91,7 @@ export default function Home() {
         <div style={S.header} className="fade-up">
           <div>
             <h1 style={S.title}><span style={{color:'var(--accent)'}}>{'//'} </span>Maps</h1>
-            <p style={S.sub}>{programs.length} program{programs.length===1?'':'s'} available</p>
+            <p style={S.sub}>{programs.length} maps{programs.length===1?'':'s'} available</p>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             <button className="btn btn-ghost btn-sm" onClick={fetchPrograms} disabled={fetching}>
