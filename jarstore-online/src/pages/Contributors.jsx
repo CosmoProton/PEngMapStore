@@ -31,8 +31,7 @@ export default function Contributors() {
         
         <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(15px, 2vw, 18px)', maxWidth: 650, margin: '0 auto', lineHeight: 1.6 }}>
           EngMapStore is the cloud platform created to simplify sharing, 
-          reviewing and downloading <code>.jar</code> files developed during lab sessions. 
-          A safe environment to test and distribute code.
+          reviewing and downloading <code>conceptual map</code> created during the year. 
         </p>
       </div>
 
