@@ -18,7 +18,7 @@ function WelcomePopup({ onClose }) {
         <p style={{color:'var(--text-secondary)',fontSize:14,lineHeight:1.7,marginBottom:20}}>
           Welcome to EngMapStore!<br/><br/>
           <strong style={{color:'var(--text-primary)'}}>Before you can upload your projects</strong>, your account needs to be reviewed by an admin.<br/><br/>
-          You will receive approval shortly. In the meantime you can browse and download available programs.
+          You will receive approval shortly. In the meantime you can browse and download available maps.
         </p>
         <div style={{display:'flex',alignItems:'center',gap:8,justifyContent:'center',padding:'10px 16px',background:'rgba(210,153,34,0.08)',border:'1px solid rgba(210,153,34,0.3)',borderRadius:'var(--radius-md)',marginBottom:20}}>
           <Clock size={15} color="var(--warning)"/>
@@ -38,7 +38,7 @@ function PendingBanner() {
     <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',background:'rgba(210,153,34,0.06)',border:'1px solid rgba(210,153,34,0.25)',borderRadius:'var(--radius-md)',marginBottom:20}}>
       <Clock size={16} color="var(--warning)"/>
       <p style={{fontSize:13,color:'var(--text-secondary)'}}>
-        <strong style={{color:'var(--warning)'}}>Account pending approval.</strong> You will be able to upload your programs once an admin approves your account.
+        <strong style={{color:'var(--warning)'}}>Account pending approval.</strong> You will be able to upload your maps once an admin approves your account.
       </p>
     </div>
   );
@@ -90,7 +90,7 @@ export default function Home() {
 
         <div style={S.header} className="fade-up">
           <div>
-            <h1 style={S.title}><span style={{color:'var(--accent)'}}>{'//'} </span>Programs</h1>
+            <h1 style={S.title}><span style={{color:'var(--accent)'}}>{'//'} </span>Maps</h1>
             <p style={S.sub}>{programs.length} program{programs.length===1?'':'s'} available</p>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -107,7 +107,7 @@ export default function Home() {
 
         <div style={S.searchWrap} className="fade-up">
           <Search size={15} color="var(--text-muted)" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}/>
-          <input className="input" style={{paddingLeft:38}} placeholder="Search programs…" value={query} onChange={e=>setQuery(e.target.value)}/>
+          <input className="input" style={{paddingLeft:38}} placeholder="Search maps…" value={query} onChange={e=>setQuery(e.target.value)}/>
         </div>
 
         {fetching ? (
@@ -116,11 +116,11 @@ export default function Home() {
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'60px 0'}}>
             <Package size={44} color="var(--text-muted)"/>
             <p style={{color:'var(--text-secondary)',marginTop:12,fontFamily:'var(--font-mono)',fontSize:14}}>
-              {query ? 'No results found' : 'No programs yet'}
+              {query ? 'No results found' : 'No maps yet'}
             </p>
           </div>
         ) : (
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:14}} className="programs-grid">
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:14}} className="maps-grid">
             {filtered.map(p => <ProgramCard key={p.id} program={p} onDownload={fetchPrograms} onDelete={id=>setPrograms(prev=>prev.filter(p=>p.id!==id))} onUpdate={fetchPrograms}/>)}
           </div>
         )}
