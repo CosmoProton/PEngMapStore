@@ -178,14 +178,14 @@ export function ProgramCard({ program, onDownload, onDelete, onUpdate }) {
 
               <h4 style={{fontSize: 14, color: 'var(--text-primary)', marginBottom: 8, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1px'}}>How to run</h4>
               <code style={{display:'block',padding:'14px',background:'rgba(0,0,0,0.4)',border:'1px solid var(--glass-border)',borderRadius:'var(--radius-sm)',fontSize:13,wordBreak:'break-all', color: 'var(--text-primary)', fontFamily:'var(--font-mono)'}}>
-                <span style={{color: 'var(--accent)'}}>$</span> java -jar {program.original_name}
+                <span style={{color: 'var(--accent)'}}>$</span> conceptual map {program.original_name}
               </code>
             </div>
             
             <div style={{display:'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: 16, flexWrap: 'wrap', gap: 16}}>
               <div style={{flex: 1, minWidth: 200}}>
                 <div style={{display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 12, marginBottom: 4}}>
-                  <Users size={14}/> <span>Development team</span>
+                  <Users size={14}/> <span>Creation team</span>
                 </div>
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
                   <span className="badge badge-gray">@{program.uploader} (Uploader)</span>
