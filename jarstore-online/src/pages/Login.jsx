@@ -29,7 +29,7 @@ export default function Login() {
         <div className="glow-line" style={{margin:'24px 0'}}/>
         <h2 style={{fontFamily:'var(--font-mono)',fontSize:18,marginBottom:8}}>Sign In</h2>
         <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:20,lineHeight:1.6}}>
-          Browse and download Java programs. Upload your projects for review.
+          Browse and download Conceptual maps. Upload your maps for review.
         </p>
         {error && (
           <div style={S.errBox}><AlertCircle size={15}/>{ERROR_MSG[error] || 'An error occurred.'}</div>
