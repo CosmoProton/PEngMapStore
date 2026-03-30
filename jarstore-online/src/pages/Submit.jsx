@@ -40,14 +40,14 @@ export default function Submit() {
   }, []);
 
   const onDrop = useCallback(accepted => {
-    if (accepted[0]) { setFile(accepted[0]); if (!name) setName(accepted[0].name.replace('.jar','')); }
+    if (accepted[0]) { setFile(accepted[0]); if (!name) setName(accepted[0].name.replace('map','')); }
   }, [name]);
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
-    accept: { 'application/java-archive':['.jar'], 'application/octet-stream':['.jar'] },
+    accept: { 'application/java-archive':['map'], 'application/octet-stream':['map'] },
     maxFiles: 1, maxSize: 100*1024*1024,
-    onDropRejected: () => toast.error('Only .jar files up to 100MB'),
+    onDropRejected: () => toast.error('Only map files up to 100MB'),
   });
 
   // 2. Logic triggered every time the user types a collaborator
@@ -84,8 +84,8 @@ export default function Submit() {
   };
 
   const handleSubmit = async () => {
-    if (!file)        return toast.error('Select a .jar file');
-    if (!name.trim()) return toast.error('Enter the program name');
+    if (!file)        return toast.error('Select a map file');
+    if (!name.trim()) return toast.error('Enter the map name');
     setUploading(true); setProgress(0);
     try {
       setStep('uploading');
@@ -179,7 +179,7 @@ export default function Submit() {
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,pointerEvents:'none'}}>
                 <Upload size={32} color={isDragActive?'var(--accent)':'var(--text-muted)'}/>
                 <p style={{fontFamily:'var(--font-sans)',fontSize:13,color:'var(--text-secondary)'}}>
-                  {isDragActive ? 'Drop the .jar here' : 'Drag the .jar here or click to browse'}
+                  {isDragActive ? 'Drop the map here' : 'Drag the map here or click to browse'}
                 </p>
                 <p style={{fontSize:11,color:'var(--text-muted)'}}>MAX 100 MB</p>
               </div>
