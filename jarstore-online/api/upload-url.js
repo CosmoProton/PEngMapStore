@@ -12,9 +12,9 @@ module.exports = async (req, res) => {
   if (!user) return err(res, 'Non autenticato', 401);
 
   const { filename } = req.body || {};
-  if (!filename || !filename.toLowerCase().endsWith('.jar')) {
-    return err(res, 'Solo file .jar');
-  }
+  if (!filename) {
+  return err(res, 'Nome file mancante');
+}
 
   // Path univoco nel bucket
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
