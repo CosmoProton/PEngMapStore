@@ -99,12 +99,28 @@ export default function Submit() {
         method:'POST', body: JSON.stringify({ filename: file.name }),
       });
 
+      console.log("STEP 1 OK");
+      console.log("uploadUrl =", uploadUrl);
+      console.log("filePath =", filePath);
+      console.log("file.name =", file.name);
+      console.log("file.type =", file.type);
+
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', e => {
           if (e.lengthComputable) setProgress(Math.round(e.loaded/e.total*100));
         });
-        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('Upload fallito')));
+        xhr.addEventListener('load', () => {
+          console.log("STEP 2 RESPONSE");
+          console.log("status =", xhr.status);
+          console.log("response =", xhr.responseText);
+        
+          if (xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload fallito: ${xhr.status} ${xhr.responseText}`));
+          }
+        });
         xhr.addEventListener('error', () => reject(new Error('Errore di rete')));
         xhr.open('PUT', uploadUrl);
         // MODIFICATO: Usa il Content-Type reale del file caricato, o un fallback generico
@@ -127,7 +143,9 @@ export default function Submit() {
       toast.success('Inviato! L\'admin lo revisionerà a breve.');
       setTimeout(() => navigate('/'), 2000);
     } catch(e) {
-      toast.error(e.message); setStep('');
+      console.error("ERRORE COMPLETO:", e);
+      toast.error(e.message);
+      setStep('');
     } finally { setUploading(false); }
   };
 
