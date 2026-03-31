@@ -27,11 +27,11 @@ export default function Submit() {
   const [progress, setProgress]         = useState(0);
   const [step, setStep]                 = useState('');
 
-  // 1. Fetch the list of known users on component mount
+  // 1. Recupera la lista degli utenti noti all'avvio del componente
   useEffect(() => {
     apiFetch('/api/admin/data?type=contributors')
       .then(data => {
-        // Merge admins and contributors, get only unique usernames
+        // Uniamo admin e contributor e prendiamo solo gli username unici
         const users = [...(data.admins || []), ...(data.contributors || [])];
         const usernames = [...new Set(users.map(u => u.github_username))];
         setKnownUsers(usernames);
@@ -40,27 +40,32 @@ export default function Submit() {
   }, []);
 
   const onDrop = useCallback(accepted => {
-    if (accepted[0]) { setFile(accepted[0]); if (!name) setName(accepted[0].name.replace('map','')); }
+    // MODIFICATO: Rimuove l'estensione dinamicamente per qualsiasi tipo di file invece di cercare solo ".jar"
+    if (accepted[0]) { 
+      setFile(accepted[0]); 
+      if (!name) setName(accepted[0].name.replace(/\.[^/.]+$/, "")); 
+    }
   }, [name]);
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
-    accept: { 'application/java-archive':['map'], 'application/octet-stream':['map'] },
+    // MODIFICATO: Rimossa la proprietà "accept" per consentire tutti i file
     maxFiles: 1, maxSize: 100*1024*1024,
-    onDropRejected: () => toast.error('Only map files up to 100MB'),
+    // MODIFICATO: Aggiornato il messaggio di errore
+    onDropRejected: () => toast.error('File troppo grande (max 100MB)'), 
   });
 
-  // 2. Logic triggered every time the user types a collaborator
+  // 2. Logica che si attiva ogni volta che digiti un collaboratore
   const handleContributorsChange = (e) => {
     const val = e.target.value;
     setContributors(val);
 
-    // Find the word the user is currently typing (after the last comma)
+    // Trova la parola che l'utente sta digitando (dopo l'ultima virgola)
     const parts = val.split(',');
     const currentWord = parts[parts.length - 1].trim().replace('@', '');
 
     if (currentWord.length > 0) {
-      // Filter users whose names contain the typed letters
+      // Filtra gli utenti che contengono le lettere digitate
       const matches = knownUsers.filter(u => u.toLowerCase().includes(currentWord.toLowerCase()));
       setFilteredSuggestions(matches);
       setShowSuggestions(matches.length > 0);
@@ -69,12 +74,12 @@ export default function Submit() {
     }
   };
 
-  // 3. Logic to apply the clicked suggestion
+  // 3. Logica per applicare il suggerimento cliccato
   const acceptSuggestion = (username) => {
     const parts = contributors.split(',');
-    parts.pop(); // Remove the incomplete fragment just typed
+    parts.pop(); // Rimuoviamo il frammento incompleto appena digitato
     
-    // Rebuild the string with the new user properly formatted
+    // Ricostruiamo la stringa con il nuovo utente formattato bene
     const newVal = parts.length > 0
       ? parts.map(p => p.trim()).join(', ') + `, @${username}, `
       : `@${username}, `;
@@ -84,8 +89,9 @@ export default function Submit() {
   };
 
   const handleSubmit = async () => {
-    if (!file)        return toast.error('Select a map file');
-    if (!name.trim()) return toast.error('Enter the map name');
+    // MODIFICATO: Aggiornato il messaggio di errore
+    if (!file)        return toast.error('Seleziona un file'); 
+    if (!name.trim()) return toast.error('Inserisci il nome');
     setUploading(true); setProgress(0);
     try {
       setStep('uploading');
@@ -98,10 +104,11 @@ export default function Submit() {
         xhr.upload.addEventListener('progress', e => {
           if (e.lengthComputable) setProgress(Math.round(e.loaded/e.total*100));
         });
-        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('Upload failed')));
-        xhr.addEventListener('error', () => reject(new Error('Network error')));
+        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('Upload fallito')));
+        xhr.addEventListener('error', () => reject(new Error('Errore di rete')));
         xhr.open('PUT', uploadUrl);
-        xhr.setRequestHeader('Content-Type', 'application/java-archive');
+        // MODIFICATO: Usa il Content-Type reale del file caricato, o un fallback generico
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream'); 
         xhr.send(file);
       });
 
@@ -117,7 +124,7 @@ export default function Submit() {
       });
 
       setStep('done');
-      toast.success('Submitted! The admin will review it shortly.');
+      toast.success('Inviato! L\'admin lo revisionerà a breve.');
       setTimeout(() => navigate('/'), 2000);
     } catch(e) {
       toast.error(e.message); setStep('');
@@ -136,10 +143,10 @@ export default function Submit() {
       <div className="page" style={{maxWidth:660}}>
         <div className="fade-up" style={{marginBottom:24}}>
           <h1 style={{fontFamily:'var(--font-mono)',fontSize:26,fontWeight:700}}>
-            <span style={{color:'var(--accent)'}}>{'//'} </span>Upload Program
+            <span style={{color:'var(--accent)'}}>{'//'} </span>Carica programma
           </h1>
           <p style={{color:'var(--text-muted)',fontSize:12,marginTop:4,fontFamily:'var(--font-mono)'}}>
-            Will be reviewed by an admin before publishing
+            Verrà revisionato dall'admin prima di essere pubblicato
           </p>
         </div>
 
@@ -148,7 +155,7 @@ export default function Submit() {
           <div style={{...S.banner, borderColor:'rgba(48, 209, 88, 0.3)', background:'rgba(48, 209, 88, 0.06)'}} className="fade-up">
             <CheckCircle size={15} color="var(--success)"/>
             <span style={{fontSize:13,color:'var(--success)'}}>
-              Account <strong>{sl?.label}</strong> {maxP ? ` — max ${maxP} approved projects` : ' — no limit'}
+              Account <strong>{sl?.label}</strong> {maxP ? ` — max ${maxP} progetti approvati` : ' — nessun limite'}
             </span>
           </div>
         )}
@@ -156,7 +163,7 @@ export default function Submit() {
           <div style={S.banner} className="fade-up">
             <AlertCircle size={15} color="var(--warning)"/>
             <span style={{fontSize:13,color:'var(--text-secondary)'}}>
-              Account <strong style={{color:'var(--warning)'}}>User</strong> — max 2 approved projects · 1 under review
+              Account <strong style={{color:'var(--warning)'}}>Utente</strong> — max 2 progetti approvati · 1 in revisione
             </span>
           </div>
         )}
@@ -172,14 +179,15 @@ export default function Submit() {
                   <p style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{(file.size/1048576).toFixed(2)} MB</p>
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();setFile(null);}}>
-                  <XCircle size={13}/>Remove
+                  <XCircle size={13}/>Rimuovi
                 </button>
               </div>
             ) : (
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,pointerEvents:'none'}}>
                 <Upload size={32} color={isDragActive?'var(--accent)':'var(--text-muted)'}/>
+                {/* MODIFICATO: Testo aggiornato da "il .jar" a "il file" */}
                 <p style={{fontFamily:'var(--font-sans)',fontSize:13,color:'var(--text-secondary)'}}>
-                  {isDragActive ? 'Drop the map here' : 'Drag the map here or click to browse'}
+                  {isDragActive ? 'Rilascia il file' : 'Trascina il file qui o clicca per esplorare'}
                 </p>
                 <p style={{fontSize:11,color:'var(--text-muted)'}}>MAX 100 MB</p>
               </div>
@@ -188,35 +196,35 @@ export default function Submit() {
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 120px',gap:10}} className="form-two-col">
             <div style={S.field}>
-              <label style={S.label}>Name *</label>
-              <input className="input" placeholder="Program name" value={name} onChange={e=>setName(e.target.value)}/>
+              <label style={S.label}>Nome *</label>
+              <input className="input" placeholder="Nome programma" value={name} onChange={e=>setName(e.target.value)}/>
             </div>
             <div style={S.field}>
-              <label style={S.label}>Version</label>
+              <label style={S.label}>Versione</label>
               <input className="input" placeholder="1.0.0" value={version} onChange={e=>setVersion(e.target.value)}/>
             </div>
           </div>
 
           <div style={S.field}>
-            <label style={S.label}>Description</label>
-            <textarea className="textarea" placeholder="Describe the program…" value={desc} onChange={e=>setDesc(e.target.value)} style={{minHeight:70}}/>
+            <label style={S.label}>Descrizione</label>
+            <textarea className="textarea" placeholder="Descrivi il programma…" value={desc} onChange={e=>setDesc(e.target.value)} style={{minHeight:70}}/>
           </div>
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}} className="form-two-col">
             <div style={S.field}>
-              <label style={S.label}>Tags (comma separated)</label>
-              <input className="input" placeholder="game, utility…" value={tags} onChange={e=>setTags(e.target.value)}/>
+              <label style={S.label}>Tag (virgola)</label>
+              <input className="input" placeholder="gioco, utility…" value={tags} onChange={e=>setTags(e.target.value)}/>
             </div>
             
-            {/* COLLABORATORS FIELD WITH AUTOCOMPLETE */}
+            {/* CAMPO COLLABORATORI CON AUTOCOMPLETE */}
             <div style={{...S.field, position: 'relative'}}>
-              <label style={S.label}>Collaborators (comma separated)</label>
+              <label style={S.label}>Collaboratori (virgola)</label>
               <input 
                 className="input" 
-                placeholder="@user1, @user2..." 
+                placeholder="@utente1, @utente2..." 
                 value={contributors} 
                 onChange={handleContributorsChange}
-                // Timeout to avoid closing menu before the user clicks
+                // Il timeout serve per non chiudere il menu prima che l'utente abbia cliccato
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} 
                 onFocus={handleContributorsChange}
               />
@@ -239,13 +247,13 @@ export default function Submit() {
                 <div style={{height:'100%',width:`${progress}%`,background:'linear-gradient(90deg,var(--accent),var(--accent2))',borderRadius:3,transition:'width .2s'}}/>
               </div>
               <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>
-                {step==='uploading' ? `Uploading… ${progress}%` : 'Registering…'}
+                {step==='uploading' ? `Caricamento… ${progress}%` : 'Registrazione…'}
               </p>
             </div>
           )}
 
           <button className="btn btn-primary" style={{justifyContent:'center'}} onClick={handleSubmit} disabled={uploading||!file}>
-            {uploading ? <><span className="spinner" style={{width:15,height:15}}/>Submitting…</> : <><Upload size={15}/>Submit for review</>}
+            {uploading ? <><span className="spinner" style={{width:15,height:15}}/>Invio…</> : <><Upload size={15}/>Invia per revisione</>}
           </button>
         </div>
       </div>
