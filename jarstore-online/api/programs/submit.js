@@ -30,7 +30,7 @@ async function antiSpamCheck(sb, dbUser) {
 
   // Controllo presenza di almeno 1 repository pubblico
   if ((dbUser.github_public_repos || 0) < 1) {
-    return 'Il tuo account GitHub deve avere almeno 1 repository pubblico.';
+    return 'Your GitHub account must have at least 1 public repository.';
   }
 
   return null;
@@ -55,12 +55,12 @@ module.exports = async (req, res) => {
     .eq('id', user.id)
     .single();
 
-  if (!dbUser) return err(res, 'Utente non trovato', 404);
+  if (!dbUser) return err(res, 'User not found', 404);
   
   // 3. Controlli sui permessi del ruolo
-  if (dbUser.user_status === 'banned') return err(res, 'Account sospeso', 403);
-  if (dbUser.user_status === 'pending') return err(res, 'Il tuo account è in attesa di approvazione admin.', 403);
-  if (!canUpload(dbUser.user_status)) return err(res, 'Non hai i permessi per caricare programmi', 403);
+  if (dbUser.user_status === 'banned') return err(res, 'Sospemded account', 403);
+  if (dbUser.user_status === 'pending') return err(res, 'Your account is awaiting admin approval.', 403);
+  if (!canUpload(dbUser.user_status)) return err(res, 'You don't have permission to load programs.', 403);
 
   // 4. Controllo limite storage globale (Supabase)
   const storageFull = await checkStorageLimit(sb);
@@ -79,25 +79,25 @@ module.exports = async (req, res) => {
     .eq('status', 'approved');
 
   if (approvedCount >= max) {
-    return err(res, `Hai raggiunto il limite di ${max} progetti approvati per il tuo livello.`, 429);
+    return err(res, `You have reached the limit of ${max} approved projects for your tier.`, 429);
   }
 
   const { count: pendingCount } = await sb
-    .from('programs')
+    .from('maps')
     .select('*', { count: 'exact', head: true })
     .eq('uploader_id', user.id)
     .eq('status', 'pending');
 
   if (pendingCount >= 1 && !isAdmin(dbUser.user_status)) {
-    return err(res, 'Hai già un progetto in attesa di revisione.', 429);
+    return err(res, 'You have yet a program in revision.', 429);
   }
 
   // 7. Estrazione dati dal body e Validazione (Tua Nuova Logica)
   const { name, description, version, tags, contributors, filePath, originalName, fileSize } = req.body || {};
   
-  if (!name?.trim())  return err(res, 'Nome obbligatorio');
-  if (!filePath)      return err(res, 'File obbligatorio');
-  if (!originalName)  return err(res, 'Nome file obbligatorio');
+  if (!name?.trim())  return err(res, 'Title required');
+  if (!filePath)      return err(res, 'File required');
+  if (!originalName)  return err(res, 'File name required');
 
   // LOGICA INFO JAR: Pulizia stringa collaboratori (es: "@user1, @user2")
   const cleanedContributors = contributors 
@@ -109,7 +109,7 @@ module.exports = async (req, res) => {
 
   // 8. Inserimento nel Database
   const { data: prog, error } = await sb
-    .from('programs')
+    .from('maps')
     .insert({
       name:          name.trim(),
       description:   description?.trim()   || '',
