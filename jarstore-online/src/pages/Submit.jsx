@@ -118,7 +118,7 @@ export default function Submit() {
           if (xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`Upload fallito: ${xhr.status} ${xhr.responseText}`));
+            reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`));
           }
         });
         xhr.addEventListener('error', () => reject(new Error('Network error')));
@@ -205,7 +205,7 @@ export default function Submit() {
                 <Upload size={32} color={isDragActive?'var(--accent)':'var(--text-muted)'}/>
                 {/* MODIFICATO: Testo aggiornato da "il .jar" a "il file" */}
                 <p style={{fontFamily:'var(--font-sans)',fontSize:13,color:'var(--text-secondary)'}}>
-                  {isDragActive ? 'Release the file' : 'Drop File' : 'Drag file here or click to explore'}
+                  {isDragActive ? 'Release the file' : 'Drag file here or click to explore'}
                 </p>
                 <p style={{fontSize:11,color:'var(--text-muted)'}}>MAX 100 MB</p>
               </div>
