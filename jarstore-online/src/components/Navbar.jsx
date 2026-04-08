@@ -26,7 +26,7 @@ export function Navbar() {
               {/* Site navigation */}
               <div style={S.links} className="nav-links">
                 <Link to="/" style={{...S.link, ...(pathname==='/'?S.linkOn:{})}}>
-                  <Home size={16}/> <span className="hide-mobile-text">Programs</span>
+                  <Home size={16}/> <span className="hide-mobile-text">Mind Maps</span>
                 </Link>
                 <Link to="/contributors" style={{...S.link, ...(pathname==='/contributors'?S.linkOn:{})}}>
                   <Info size={16}/> <span className="hide-mobile-text">About</span>
