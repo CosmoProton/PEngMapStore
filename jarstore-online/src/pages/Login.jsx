@@ -24,12 +24,12 @@ export default function Login() {
         <div style={{textAlign:'center'}}>
           <div style={S.iconBox}><BookOpen size={28} color="var(--accent)"/></div>
           <h1 style={S.title}>EngMapStore</h1>
-          <p style={S.sub}>Student Software Repository</p>
+          <p style={S.sub}>Mind Map Repository</p>
         </div>
         <div className="glow-line" style={{margin:'24px 0'}}/>
         <h2 style={{fontFamily:'var(--font-mono)',fontSize:18,marginBottom:8}}>Sign In</h2>
         <p style={{fontSize:13,color:'var(--text-secondary)',marginBottom:20,lineHeight:1.6}}>
-          Browse and download Conceptual maps. Upload your maps for review.
+          Browse and download mind maps. Upload your mind maps for review.
         </p>
         {error && (
           <div style={S.errBox}><AlertCircle size={15}/>{ERROR_MSG[error] || 'An error occurred.'}</div>
