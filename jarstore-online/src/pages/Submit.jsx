@@ -52,7 +52,7 @@ export default function Submit() {
     // MODIFICATO: Rimossa la proprietà "accept" per consentire tutti i file
     maxFiles: 1, maxSize: 100*1024*1024,
     // MODIFICATO: Aggiornato il messaggio di errore
-    onDropRejected: () => toast.error('File troppo grande (max 100MB)'), 
+    onDropRejected: () => toast.error('The file is too big (max 100MB)'), 
   });
 
   // 2. Logica che si attiva ogni volta che digiti un collaboratore
@@ -90,8 +90,8 @@ export default function Submit() {
 
   const handleSubmit = async () => {
     // MODIFICATO: Aggiornato il messaggio di errore
-    if (!file)        return toast.error('Seleziona un file'); 
-    if (!name.trim()) return toast.error('Inserisci il nome');
+    if (!file)        return toast.error('Select a file'); 
+    if (!name.trim()) return toast.error('Insert the title');
     setUploading(true); setProgress(0);
     try {
       setStep('uploading');
@@ -121,7 +121,7 @@ export default function Submit() {
             reject(new Error(`Upload fallito: ${xhr.status} ${xhr.responseText}`));
           }
         });
-        xhr.addEventListener('error', () => reject(new Error('Errore di rete')));
+        xhr.addEventListener('error', () => reject(new Error('Network error')));
         xhr.open('PUT', uploadUrl);
         // MODIFICATO: Usa il Content-Type reale del file caricato, o un fallback generico
         xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream'); 
@@ -140,7 +140,7 @@ export default function Submit() {
       });
 
       setStep('done');
-      toast.success('Inviato! L\'admin lo revisionerà a breve.');
+      toast.success('Sent! L\'The admin will review it shortly.');
       setTimeout(() => navigate('/'), 2000);
     } catch(e) {
       console.error("ERRORE COMPLETO:", e);
@@ -161,10 +161,10 @@ export default function Submit() {
       <div className="page" style={{maxWidth:660}}>
         <div className="fade-up" style={{marginBottom:24}}>
           <h1 style={{fontFamily:'var(--font-mono)',fontSize:26,fontWeight:700}}>
-            <span style={{color:'var(--accent)'}}>{'//'} </span>Carica programma
+            <span style={{color:'var(--accent)'}}>{'//'} </span>Load maps
           </h1>
           <p style={{color:'var(--text-muted)',fontSize:12,marginTop:4,fontFamily:'var(--font-mono)'}}>
-            Verrà revisionato dall'admin prima di essere pubblicato
+            It will be reviewed by the admin before being published.
           </p>
         </div>
 
@@ -197,7 +197,7 @@ export default function Submit() {
                   <p style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{(file.size/1048576).toFixed(2)} MB</p>
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();setFile(null);}}>
-                  <XCircle size={13}/>Rimuovi
+                  <XCircle size={13}/>Remove
                 </button>
               </div>
             ) : (
@@ -205,7 +205,7 @@ export default function Submit() {
                 <Upload size={32} color={isDragActive?'var(--accent)':'var(--text-muted)'}/>
                 {/* MODIFICATO: Testo aggiornato da "il .jar" a "il file" */}
                 <p style={{fontFamily:'var(--font-sans)',fontSize:13,color:'var(--text-secondary)'}}>
-                  {isDragActive ? 'Rilascia il file' : 'Trascina il file qui o clicca per esplorare'}
+                  {isDragActive ? 'Release the file' : 'Drop File' : 'Drag file here or click to explore'}
                 </p>
                 <p style={{fontSize:11,color:'var(--text-muted)'}}>MAX 100 MB</p>
               </div>
@@ -214,8 +214,8 @@ export default function Submit() {
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 120px',gap:10}} className="form-two-col">
             <div style={S.field}>
-              <label style={S.label}>Nome *</label>
-              <input className="input" placeholder="Nome programma" value={name} onChange={e=>setName(e.target.value)}/>
+              <label style={S.label}>title *</label>
+              <input className="input" placeholder="Maps title" value={name} onChange={e=>setName(e.target.value)}/>
             </div>
             <div style={S.field}>
               <label style={S.label}>Versione</label>
@@ -224,19 +224,19 @@ export default function Submit() {
           </div>
 
           <div style={S.field}>
-            <label style={S.label}>Descrizione</label>
-            <textarea className="textarea" placeholder="Descrivi il programma…" value={desc} onChange={e=>setDesc(e.target.value)} style={{minHeight:70}}/>
+            <label style={S.label}>Description</label>
+            <textarea className="textarea" placeholder=Describe the program…" value={desc} onChange={e=>setDesc(e.target.value)} style={{minHeight:70}}/>
           </div>
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}} className="form-two-col">
             <div style={S.field}>
               <label style={S.label}>Tag (virgola)</label>
-              <input className="input" placeholder="gioco, utility…" value={tags} onChange={e=>setTags(e.target.value)}/>
+              <input className="input" placeholder="map, utility…" value={tags} onChange={e=>setTags(e.target.value)}/>
             </div>
             
             {/* CAMPO COLLABORATORI CON AUTOCOMPLETE */}
             <div style={{...S.field, position: 'relative'}}>
-              <label style={S.label}>Collaboratori (virgola)</label>
+              <label style={S.label}>Collaborators (virgola)</label>
               <input 
                 className="input" 
                 placeholder="@utente1, @utente2..." 
