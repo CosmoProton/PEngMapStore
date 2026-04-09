@@ -25,13 +25,13 @@ export default function Contributors() {
         <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 700, letterSpacing: '-1.5px', marginBottom: 16, lineHeight: 1.1 }}>
           The repository for your <br/>
           <span style={{ background: 'linear-gradient(90deg, var(--accent), var(--accent2))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-             Conceptual maps
+             Mind maps
           </span>
         </h1>
         
         <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(15px, 2vw, 18px)', maxWidth: 650, margin: '0 auto', lineHeight: 1.6 }}>
           EngMapStore is the cloud platform created to simplify sharing, 
-          reviewing and downloading <code>conceptual map</code> created during the year. 
+          reviewing and downloading <code>mind maps</code> created during the year. 
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export default function Contributors() {
       {allAdmins.length > 0 && (
         <div className="fade-up" style={{ marginBottom: 48 }}>
           <h2 style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
-            <ShieldCheck size={16} color="var(--success)"/> Active Staff
+            <ShieldCheck size={16} colofr="var(--success)"/> Active Staff
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {allAdmins.map(a => {
