@@ -26,6 +26,11 @@ export default function Submit() {
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState('');
 
+  // --- STATI PER LA FINTA IA ---
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  // -----------------------------
+
   useEffect(() => {
     apiFetch('/api/admin/data?type=contributors')
       .then(data => {
@@ -39,6 +44,8 @@ export default function Submit() {
   const onDrop = useCallback((accepted) => {
     if (accepted[0]) {
       setFile(accepted[0]);
+      // Resetta l'IA se si cambia file
+      setAiResult(null); 
       if (!name) {
         setName(accepted[0].name.replace(/\.[^/.]+$/, ''));
       }
@@ -86,6 +93,27 @@ export default function Submit() {
   const handleSubmit = async () => {
     if (!file) return toast.error('Select a file.');
     if (!name.trim()) return toast.error('Enter a title.');
+
+    // --- LOGICA DELLA FINTA IA ---
+    if (!aiResult) {
+      setIsAnalyzing(true);
+      setStep('analyzing');
+
+      setTimeout(() => {
+        // Genera probabilità umana casuale tra 88% e 98%
+        const percentualeUmana = Math.floor(Math.random() * (98 - 88 + 1)) + 88;
+        setAiResult({
+          umano: percentualeUmana,
+          ia: 100 - percentualeUmana
+        });
+        setIsAnalyzing(false);
+        setStep('');
+        toast.success('AI Check passed! You can now submit.');
+      }, 3500); // 3.5 secondi di finta analisi
+      
+      return; // Interrompe l'esecuzione: aspetta che l'utente clicchi di nuovo
+    }
+    // -----------------------------
 
     setUploading(true);
     setProgress(0);
@@ -246,6 +274,7 @@ export default function Submit() {
                   onClick={(e) => {
                     e.stopPropagation();
                     setFile(null);
+                    setAiResult(null); // Resetta se l'utente cambia file
                   }}
                 >
                   <XCircle size={13} />
@@ -334,6 +363,29 @@ export default function Submit() {
             </div>
           </div>
 
+          {/* --- INTERFACCIA DELLA FINTA IA --- */}
+          {isAnalyzing && (
+            <div style={{ ...S.banner, flexDirection: 'column', alignItems: 'flex-start', background: 'rgba(255,255,255,0.05)', border: '1px dashed var(--accent)' }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, margin: 2, color: 'var(--text-secondary)' }}>⚙️ Initializing neural linguistic model...</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, margin: 2, color: 'var(--text-secondary)' }}>🔍 Scanning lexical perplexity...</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, margin: 2, color: 'var(--accent)', fontWeight: 'bold' }}>Analyzing neural patterns...</p>
+            </div>
+          )}
+
+          {aiResult && (
+            <div style={{ ...S.banner, flexDirection: 'column', alignItems: 'flex-start', background: 'rgba(48, 209, 88, 0.08)', borderColor: 'var(--success)' }}>
+              <h4 style={{ color: 'var(--success)', margin: '0 0 8px 0', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CheckCircle size={16} /> AI Anti-Plagiarism Report
+              </h4>
+              <p style={{ fontSize: 12, margin: '2px 0', color: 'var(--text-primary)' }}>✅ Human probability: <strong style={{ color: 'var(--success)'}}>{aiResult.umano}%</strong></p>
+              <p style={{ fontSize: 12, margin: '2px 0', color: 'var(--text-muted)' }}>⚠️ AI probability: {aiResult.ia}%</p>
+              <div style={{ marginTop: 8, background: 'var(--success)', color: '#000', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 'bold', width: '100%', textAlign: 'center' }}>
+                MIND MAP APPROVED
+              </div>
+            </div>
+          )}
+          {/* ---------------------------------- */}
+
           {uploading && (
             <div>
               <div style={{ height: 5, background: 'var(--glass-border)', borderRadius: 3, overflow: 'hidden' }}>
@@ -357,12 +409,22 @@ export default function Submit() {
             className="btn btn-primary"
             style={{ justifyContent: 'center' }}
             onClick={handleSubmit}
-            disabled={uploading || !file}
+            disabled={uploading || isAnalyzing || !file}
           >
-            {uploading ? (
+            {isAnalyzing ? (
+              <>
+                <span className="spinner" style={{ width: 15, height: 15 }} />
+                Analyzing...
+              </>
+            ) : uploading ? (
               <>
                 <span className="spinner" style={{ width: 15, height: 15 }} />
                 Submitting...
+              </>
+            ) : !aiResult ? (
+              <>
+                <FileCode size={15} />
+                Run AI Check
               </>
             ) : (
               <>
