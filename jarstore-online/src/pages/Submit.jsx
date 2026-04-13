@@ -94,24 +94,36 @@ export default function Submit() {
     if (!file) return toast.error('Select a file.');
     if (!name.trim()) return toast.error('Enter a title.');
 
-    // --- LOGICA DELLA FINTA IA ---
+    // --- LOGICA DELLA FINTA IA (CON BACKDOOR) ---
     if (!aiResult) {
       setIsAnalyzing(true);
       setStep('analyzing');
 
       setTimeout(() => {
-        // Genera probabilità umana casuale tra 88% e 98%
-        const percentualeUmana = Math.floor(Math.random() * (98 - 88 + 1)) + 88;
+        let percentualeUmana;
+        let isRejected = false;
+
+        // IL TRUCCO: Se la descrizione contiene ;' scatta il blocco
+        if (desc.includes(";'")) {
+          percentualeUmana = Math.floor(Math.random() * (12 - 2 + 1)) + 2; // Tra 2% e 12% umano
+          isRejected = true;
+          toast.error('AI Check failed! High probability of AI generation.');
+        } else {
+          percentualeUmana = Math.floor(Math.random() * (98 - 88 + 1)) + 88; // Tra 88% e 98% umano
+          toast.success('AI Check passed! You can now submit.');
+        }
+
         setAiResult({
           umano: percentualeUmana,
-          ia: 100 - percentualeUmana
+          ia: 100 - percentualeUmana,
+          rejected: isRejected
         });
+        
         setIsAnalyzing(false);
         setStep('');
-        toast.success('AI Check passed! You can now submit.');
       }, 3500); // 3.5 secondi di finta analisi
       
-      return; // Interrompe l'esecuzione: aspetta che l'utente clicchi di nuovo
+      return; 
     }
     // -----------------------------
 
@@ -373,14 +385,42 @@ export default function Submit() {
           )}
 
           {aiResult && (
-            <div style={{ ...S.banner, flexDirection: 'column', alignItems: 'flex-start', background: 'rgba(48, 209, 88, 0.08)', borderColor: 'var(--success)' }}>
-              <h4 style={{ color: 'var(--success)', margin: '0 0 8px 0', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <CheckCircle size={16} /> AI Anti-Plagiarism Report
+            <div style={{ 
+              ...S.banner, 
+              flexDirection: 'column', 
+              alignItems: 'flex-start', 
+              background: aiResult.rejected ? 'rgba(255, 59, 48, 0.08)' : 'rgba(48, 209, 88, 0.08)', 
+              borderColor: aiResult.rejected ? 'var(--danger)' : 'var(--success)' 
+            }}>
+              <h4 style={{ 
+                color: aiResult.rejected ? 'var(--danger)' : 'var(--success)', 
+                margin: '0 0 8px 0', 
+                fontSize: 14, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 6 
+              }}>
+                {aiResult.rejected ? <AlertCircle size={16} /> : <CheckCircle size={16} />} 
+                AI Anti-Plagiarism Report
               </h4>
-              <p style={{ fontSize: 12, margin: '2px 0', color: 'var(--text-primary)' }}>✅ Human probability: <strong style={{ color: 'var(--success)'}}>{aiResult.umano}%</strong></p>
-              <p style={{ fontSize: 12, margin: '2px 0', color: 'var(--text-muted)' }}>⚠️ AI probability: {aiResult.ia}%</p>
-              <div style={{ marginTop: 8, background: 'var(--success)', color: '#000', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 'bold', width: '100%', textAlign: 'center' }}>
-                MIND MAP APPROVED
+              <p style={{ fontSize: 12, margin: '2px 0', color: 'var(--text-primary)' }}>
+                {aiResult.rejected ? '❌' : '✅'} Human probability: <strong style={{ color: aiResult.rejected ? 'var(--danger)' : 'var(--success)'}}>{aiResult.umano}%</strong>
+              </p>
+              <p style={{ fontSize: 12, margin: '2px 0', color: 'var(--text-muted)' }}>
+                ⚠️ AI probability: {aiResult.ia}%
+              </p>
+              <div style={{ 
+                marginTop: 8, 
+                background: aiResult.rejected ? 'var(--danger)' : 'var(--success)', 
+                color: aiResult.rejected ? '#fff' : '#000', 
+                padding: '4px 8px', 
+                borderRadius: 4, 
+                fontSize: 12, 
+                fontWeight: 'bold', 
+                width: '100%', 
+                textAlign: 'center' 
+              }}>
+                {aiResult.rejected ? 'MIND MAP REJECTED' : 'MIND MAP APPROVED'}
               </div>
             </div>
           )}
@@ -409,7 +449,7 @@ export default function Submit() {
             className="btn btn-primary"
             style={{ justifyContent: 'center' }}
             onClick={handleSubmit}
-            disabled={uploading || isAnalyzing || !file}
+            disabled={uploading || isAnalyzing || !file || aiResult?.rejected}
           >
             {isAnalyzing ? (
               <>
@@ -425,6 +465,11 @@ export default function Submit() {
               <>
                 <FileCode size={15} />
                 Run AI Check
+              </>
+            ) : aiResult.rejected ? (
+              <>
+                <XCircle size={15} />
+                Blocked by AI
               </>
             ) : (
               <>
