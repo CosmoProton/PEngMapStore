@@ -6,49 +6,42 @@ export default async function handler(req, res) {
   const { method } = req;
   const { action, taskId, userNik } = req.query;
 
-  if (method === 'GET') {
-    try {
-      // 1. Recupero consegne per l'admin
+  // Forza la risposta sempre in formato JSON
+  res.setHeader('Content-Type', 'application/json');
+
+  try {
+    if (method === 'GET') {
       if (action === 'submissions' && taskId) {
         const { data, error } = await supabase.from('task_submissions').select('*').eq('task_id', taskId);
-        if (error) throw error;
-        return res.status(200).json({ submissions: data });
+        if (error) return res.status(400).json({ error: error.message });
+        return res.status(200).json(data || []);
       }
 
-      // 2. Recupero compiti filtrati per lo studente (o tutti se pubblici)
       if (action === 'student' && userNik) {
-        const { data, error } = await supabase
-          .from('tasks')
-          .select('*')
-          .order('deadline', { ascending: true });
+        const { data, error } = await supabase.from('tasks').select('*').order('deadline', { ascending: true });
+        if (error) return res.status(400).json({ error: error.message });
         
-        if (error) throw error;
-        // Filtra i compiti: prendi quelli generali ({}) o dove compare il nik dello studente
-        const filtered = data.filter(t => t.assigned_to.length === 0 || t.assigned_to.includes(userNik));
+        const filtered = (data || []).filter(t => t.assigned_to.length === 0 || t.assigned_to.includes(userNik));
         return res.status(200).json(filtered);
       }
 
-      // 3. Vista globale Admin
+      // Vista Admin standard
       const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return res.status(200).json(data);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
+      if (error) return res.status(400).json({ error: error.message });
+      return res.status(200).json(data || []);
     }
-  }
 
-  if (method === 'POST') {
-    try {
+    if (method === 'POST') {
       if (action === 'create') {
         const { title, description, deadline, assigned_to } = req.body;
-        if (!title || !deadline) return res.status(400).json({ error: 'Titolo e Scadenza obbligatori.' });
+        if (!title || !deadline) return res.status(400).json({ error: 'Titolo e Scadenza sono obbligatori.' });
 
         const { data, error } = await supabase
           .from('tasks')
           .insert([{ title, description, deadline, assigned_to: assigned_to || [] }])
           .select();
 
-        if (error) throw error;
+        if (error) return res.status(400).json({ error: error.message });
         return res.status(201).json(data[0]);
       }
 
@@ -61,17 +54,16 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabase
           .from('task_submissions')
-          .insert([{ task_id: tId, user_nik: uNik, map_id: mapId, submitted_at: submittedAt.toISOString(), delay_days: delayDays, status, penalty_badge: delayDays }])
+          .insert([{ task_id: tId, user_nik: uNik, map_id: mapId, submitted_at: submittedAt.toISOString(), delay_days: delayDays, status }])
           .select();
 
-        if (error) throw error;
+        if (error) return res.status(400).json({ error: error.message });
         return res.status(200).json(data[0]);
       }
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
     }
-  }
 
-  res.setHeader('Allow', ['GET', 'POST']);
-  return res.status(405).end(`Method ${method} Not Allowed`);
+    return res.status(405).json({ error: `Method ${method} not allowed` });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 }
