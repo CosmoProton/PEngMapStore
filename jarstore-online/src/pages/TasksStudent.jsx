@@ -1,109 +1,158 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth.jsx';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth, apiFetch } from '../hooks/useAuth.jsx';
+import { useToast } from '../hooks/useToast.js';
+import { ToastContainer } from '../components/ToastContainer.jsx';
+import { Calendar, Package, FileUp, AlertTriangle, Clock } from 'lucide-react';
 
 export default function TasksStudent() {
   const { user } = useAuth();
+  const toast = useToast();
   const [tasks, setTasks] = useState([]);
+  const [fetching, setFetching] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [mapId, setMapId] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  const fetchMyTasks = useCallback(async () => {
     if (!user?.github_username) return;
-    
-    // Cerca i compiti associati al nik GitHub corrente
-    fetch(`/api/tasks?action=student&userNik=${encodeURIComponent(user.github_username)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTasks(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, [user]);
+    setFetching(true);
+    try {
+      const data = await apiFetch(`/api/tasks?action=student&userNik=${encodeURIComponent(user.github_username)}`);
+      setTasks(data || []);
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setFetching(false);
+    }
+  }, [user, toast]);
 
-  const handleSubmission = async (e) => {
+  useEffect(() => { fetchMyTasks(); }, [fetchMyTasks]);
+
+  const handleSubmitMap = async (e) => {
     e.preventDefault();
     if (!selectedTask || !mapId.trim()) return;
 
-    const payload = {
-      taskId: selectedTask.id,
-      userNik: user.github_username,
-      mapId: mapId.trim(),
-      deadline: selectedTask.deadline
-    };
-
-    const res = await fetch('/api/tasks?action=submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
+    setSubmitting(true);
+    try {
+      await apiFetch('/api/tasks?action=submit', {
+        method: 'POST',
+        body: JSON.stringify({
+          taskId: selectedTask.id,
+          userNik: user.github_username,
+          mapId: mapId.trim(),
+          deadline: selectedTask.deadline
+        })
+      });
+      toast.success('Mappa associata e consegnata correttamente!');
       setMapId('');
-      alert('✅ Mappa consegnata con successo!');
-    } else {
-      alert('❌ Errore durante la consegna.');
+    } catch (e) {
+      toast.error(e.message);
+    } {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="pt-24 p-6 max-w-4xl mx-auto space-y-6 text-gray-100">
-      <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700 space-y-2">
-        <h1 className="text-xl font-bold text-white">🎯 Pannello Consegne Compiti</h1>
-        <p className="text-sm text-gray-400">
-          Benvenuto, <span className="text-indigo-400 font-semibold">{user?.github_username}</span>. Qui trovi i tuoi compiti attivi.
-        </p>
-      </div>
+    <>
+      <div className="page-wide fade-up" style={{ paddingTop: '80px' }}>
+        
+        {/* Banner Benvenuto */}
+        <div style={S.welcomeCard} className="glass">
+          <Calendar size={20} color="var(--accent)" />
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 700 }}>Pannello Compiti & Scadenze</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+              Account sincronizzato: <strong style={{ color: 'var(--accent)' }}>{user?.github_username}</strong>. Qui trovi i lavori richiesti dal docente.
+            </p>
+          </div>
+        </div>
 
-      {loading ? (
-        <p className="text-sm text-gray-400 italic">Caricamento scadenze...</p>
-      ) : tasks.length === 0 ? (
-        <p className="text-sm text-gray-500 bg-gray-800/30 p-4 rounded-lg border border-gray-800 italic text-center">Nessun compito attivo assegnato al tuo account in questo momento.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">I Tuoi Compiti</h2>
-            {tasks.map(t => (
-              <div 
-                key={t.id} onClick={() => setSelectedTask(t)}
-                className={`p-3 rounded-lg border cursor-pointer text-sm font-medium transition ${selectedTask?.id === t.id ? 'border-indigo-500 bg-indigo-950/40 text-white' : 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/60'}`}
-              >
-                {t.title}
+        {/* Layout griglia */}
+        <div style={S.mainGrid}>
+          
+          {/* Elenco Compiti Attivi */}
+          <div className="glass" style={S.sidebar}>
+            <h2 style={S.sectionTitle}>I Tuoi Compiti</h2>
+            {fetching ? (
+              <div style={S.center}><div className="spinner" style={{ width: 20, height: 20 }} /></div>
+            ) : tasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <Package size={24} color="var(--text-muted)" />
+                <p style={S.emptyTxt}>Nessun compito attivo al momento.</p>
               </div>
-            ))}
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {tasks.map(t => (
+                  <div 
+                    key={t.id} onClick={() => setSelectedTask(t)}
+                    style={{ ...S.taskCard, ...(selectedTask?.id === t.id ? S.taskCardActive : {}) }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{t.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="md:col-span-2 bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+          {/* Dettaglio del compito e Area di Caricamento */}
+          <div className="glass" style={S.contentArea}>
             {selectedTask ? (
-              <div className="space-y-4">
-                <h2 className="text-lg font-bold text-white">{selectedTask.title}</h2>
-                <p className="text-sm text-gray-300">{selectedTask.description}</p>
-                <p className="text-xs text-red-400 font-semibold bg-red-950/20 border border-red-900/50 px-2 py-1 rounded w-fit">
-                  Scadenza: {new Date(selectedTask.deadline).toLocaleString('it-IT')}
-                </p>
-                
-                <form onSubmit={handleSubmission} className="pt-4 border-t border-gray-700 space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <h2 style={S.detailTitle}>{selectedTask.title}</h2>
+                  <p style={S.description}>{selectedTask.description || 'Nessun dettaglio aggiuntivo dal docente.'}</p>
+                </div>
+
+                <div style={S.deadlineBanner}>
+                  <Clock size={15} color="var(--warning)" />
+                  <span>Consegnare entro il: <strong>{new Date(selectedTask.deadline).toLocaleString('it-IT')}</strong></span>
+                </div>
+
+                {/* Form Invio Elaborato */}
+                <form onSubmit={handleSubmitMap} style={S.uploadForm}>
+                  <h3 style={{ ...S.sectionTitle, fontSize: 13, paddingBottom: 4 }}>Invia la tua Mappa</h3>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-400">ID o Nome della Mappa da allegare</label>
+                    <label style={S.label}>ID Mappa o URL</label>
                     <input 
-                      type="text" required placeholder="Inserisci l'identificativo esatto della tua mappa" value={mapId} onChange={(e) => setMapId(e.target.value)}
-                      className="w-full mt-1 p-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:border-indigo-500 outline-none"
+                      className="input" required type="text" 
+                      placeholder="Es. id_mia_mappa o incolla il nome esatto" 
+                      value={mapId} onChange={e => setMapId(e.target.value)} 
                     />
                   </div>
-                  <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold text-sm hover:bg-emerald-700 transition shadow">
-                    Invia Mappa per la Valutazione
+                  <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={submitting}>
+                    <FileUp size={14} /> {submitting ? 'Invio in corso...' : 'Consegna Mappa'}
                   </button>
                 </form>
               </div>
             ) : (
-              <p className="text-gray-400 text-center py-8 text-sm italic">Seleziona un compito dalla lista a sinistra per procedere.</p>
+              <div style={S.centerColumn}>
+                <AlertTriangle size={32} color="var(--text-muted)" />
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'var(--font-mono)' }}>Seleziona un compito a sinistra per allegare il tuo lavoro.</p>
+              </div>
             )}
           </div>
+
         </div>
-      )}
-    </div>
+      </div>
+      <ToastContainer toasts={toast.toasts} />
+    </>
   );
 }
+
+const S = {
+  welcomeCard: { display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', marginBottom: 20 },
+  mainGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, alignItems: 'start' },
+  sidebar: { padding: 16, borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid var(--glass-border)' },
+  contentArea: { gridColumn: 'span 2', minHeight: 320, padding: 20, borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' },
+  sectionTitle: { fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: 6 },
+  taskCard: { padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.15s', fontSize: 13 },
+  taskCardActive: { border: '1px solid var(--accent)', background: 'var(--glass-highlight)' },
+  center: { display: 'flex', justifyContent: 'center', padding: '20px 0' },
+  emptyTxt: { color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 8 },
+  centerColumn: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, padding: '60px 0' },
+  detailTitle: { fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700 },
+  description: { color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginTop: 6 },
+  deadlineBanner: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(210,153,34,0.06)', border: '1px solid rgba(210,153,34,0.2)', borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--text-secondary)' },
+  uploadForm: { background: 'rgba(0,0,0,0.15)', padding: 16, border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 },
+  label: { display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 4 }
+};
