@@ -8,7 +8,9 @@ import Submit           from './pages/Submit.jsx';
 import Admin            from './pages/Admin.jsx';
 import AuthCallback     from './pages/AuthCallback.jsx';
 import Contributors     from './pages/Contributors.jsx';
-import TasksAdmin 	from './pages/TasksAdmin';
+import TasksAdmin 		from './pages/TasksAdmin';
+import TasksAdmin		from './pages/TasksAdmin';
+import TasksStudent 	from './pages/TasksStudent';
 
 
 function Protected({ children, adminOnly = false }) {
@@ -31,7 +33,9 @@ function AppRoutes() {
         <Route path="/"      	     element={<Protected><Home/></Protected>}/>
         <Route path="/submit" 	     element={<Protected><Submit/></Protected>}/>
         <Route path="/admin"  	     element={<Protected adminOnly><Admin/></Protected>}/>
-	<Route path="/admin/tasks"   element={<TasksAdmin />} />
+		<Route path="/admin/tasks"   element={<TasksAdmin />} />
+		<Route path="/admin/tasks" element={<TasksAdmin />} />
+		<Route path="/tasks" element={<TasksStudent />} />
         <Route path="*"       	     element={<Navigate to="/"/>}/>
       </Routes>
     </>
