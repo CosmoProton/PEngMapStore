@@ -8,6 +8,8 @@ import Submit           from './pages/Submit.jsx';
 import Admin            from './pages/Admin.jsx';
 import AuthCallback     from './pages/AuthCallback.jsx';
 import Contributors     from './pages/Contributors.jsx';
+import TasksAdmin 	from './pages/TasksAdmin';
+
 
 function Protected({ children, adminOnly = false }) {
   const { user, loading } = useAuth();
@@ -26,10 +28,11 @@ function AppRoutes() {
         <Route path="/login"         element={user ? <Navigate to="/"/> : <Login/>}/>
         <Route path="/auth/callback" element={<AuthCallback/>}/>
         <Route path="/contributors"  element={<Contributors/>}/>
-        <Route path="/"       element={<Protected><Home/></Protected>}/>
-        <Route path="/submit" element={<Protected><Submit/></Protected>}/>
-        <Route path="/admin"  element={<Protected adminOnly><Admin/></Protected>}/>
-        <Route path="*"       element={<Navigate to="/"/>}/>
+        <Route path="/"      	     element={<Protected><Home/></Protected>}/>
+        <Route path="/submit" 	     element={<Protected><Submit/></Protected>}/>
+        <Route path="/admin"  	     element={<Protected adminOnly><Admin/></Protected>}/>
+	<Route path="/admin/tasks"   element={<TasksAdmin />} />
+        <Route path="*"       	     element={<Navigate to="/"/>}/>
       </Routes>
     </>
   );
