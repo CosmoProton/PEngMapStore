@@ -134,7 +134,7 @@ export default function TasksAdmin() {
                         <tr style={S.thRow}>
                           <th style={S.th}>Studente (GitHub)</th>
                           <th style={S.th}>Stato</th>
-                          <th style={S.th} style={{ textAlign: 'right' }}>Mappa</th>
+                          <th style={{ ...S.th, textAlign: 'right' }}>Mappa</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -146,7 +146,7 @@ export default function TasksAdmin() {
                                 {sub.status === 'on_time' ? 'In Tempo' : `Ritardo (+${sub.delay_days}d)`}
                               </span>
                             </td>
-                            <td style={S.td} style={{ textAlign: 'right' }}>
+                            <td style={{ ...S.td, textAlign: 'right' }}>
                               <a href={`/maps/${sub.map_id}`} className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', padding: '4px 10px' }}>Apri</a>
                             </td>
                           </tr>
