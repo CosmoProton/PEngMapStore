@@ -22,11 +22,18 @@ export default function TasksAdmin() {
     setFetching(true);
     try {
       const data = await apiFetch('/api/tasks');
-      setTasks(data || []);
+      
+      // FIX CRITICO: Se l'API restituisce un errore nel JSON, fermati e mostra l'errore
+      if (data && data.error) throw new Error(data.error);
+      
+      // FIX CRITICO: Assicuriamoci che data sia SEMPRE un array prima di passarlo a React
+      setTasks(Array.isArray(data) ? data : []);
     } catch (e) {
-      toast.error(e.message);
+      console.error("Errore fetchTasks:", e);
+      toast.error(e.message || "Errore sconosciuto nel caricamento.");
+      setTasks([]); // Evita il crash di tasks.map()
     } finally {
-      setFetching(false);
+      setFetching(false); // Spegne la girella SEMPRE
     }
   }, [toast]);
 
@@ -47,8 +54,9 @@ export default function TasksAdmin() {
     const assignedArray = assignedTo ? assignedTo.split(',').map(nik => nik.trim()) : [];
 
     try {
-      await apiFetch('/api/tasks?action=create', {
+      const response = await apiFetch('/api/tasks?action=create', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           description,
@@ -56,12 +64,16 @@ export default function TasksAdmin() {
           assigned_to: assignedArray
         })
       });
+
+      if (response && response.error) throw new Error(response.error);
+
       toast.success('Task pubblicato con successo!');
       setTitle(''); setDescription(''); setDeadline(''); setAssignedTo('');
       setIsModalOpen(false);
       fetchTasks();
     } catch (e) {
-      toast.error(e.message);
+      console.error("Errore handleCreateTask:", e);
+      toast.error(e.message || "Errore durante la creazione del compito.");
     }
   };
 
