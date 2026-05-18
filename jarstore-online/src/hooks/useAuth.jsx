@@ -35,11 +35,39 @@ export const useAuth = () => useContext(AuthContext);
 
 export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem('jwt');
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res  = await fetch(path, { ...options, headers });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let res;
+
+  try {
+    res = await fetch(path, {
+      ...options,
+      headers,
+      cache: 'no-store'
+    });
+  } catch (networkErr) {
+    console.error(networkErr);
+    throw new Error('Errore rete');
+  }
+
+  let data = null;
+
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    throw new Error(data?.error || `HTTP ${res.status}`);
+  }
+
   return data;
 }
 
