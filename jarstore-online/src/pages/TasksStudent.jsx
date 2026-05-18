@@ -14,15 +14,26 @@ export default function TasksStudent() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchMyTasks = useCallback(async () => {
-    if (!user?.github_username) return;
+    // FIX: Intercettiamo il nome utente corretto, che sia su github_username o su user_metadata
+    const studentNik = user?.github_username || user?.user_metadata?.user_name;
+    
+    if (!studentNik) {
+      setFetching(false); // FIX CRITICO: Spegne la girella se non trova il nome!
+      return;
+    }
+
     setFetching(true);
     try {
-      const data = await apiFetch(`/api/tasks?action=student&userNik=${encodeURIComponent(user.github_username)}`);
-      setTasks(data || []);
+      const data = await apiFetch(`/api/tasks?action=student&userNik=${encodeURIComponent(studentNik)}`);
+      
+      if (data && data.error) throw new Error(data.error);
+      setTasks(Array.isArray(data) ? data : []);
     } catch (e) {
-      toast.error(e.message);
+      console.error("Errore fetchMyTasks:", e);
+      toast.error(e.message || "Impossibile caricare i compiti.");
+      setTasks([]);
     } finally {
-      setFetching(false);
+      setFetching(false); // Spegne la girella SEMPRE
     }
   }, [user, toast]);
 
@@ -30,25 +41,31 @@ export default function TasksStudent() {
 
   const handleSubmitMap = async (e) => {
     e.preventDefault();
-    if (!selectedTask || !mapId.trim()) return;
+    const studentNik = user?.github_username || user?.user_metadata?.user_name;
+    if (!selectedTask || !mapId.trim() || !studentNik) return;
 
     setSubmitting(true);
     try {
-      await apiFetch('/api/tasks?action=submit', {
+      const response = await apiFetch('/api/tasks?action=submit', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           taskId: selectedTask.id,
-          userNik: user.github_username,
+          userNik: studentNik,
           mapId: mapId.trim(),
           deadline: selectedTask.deadline
         })
       });
-      toast.success('Mappa associata e consegnata correttamente!');
+
+      if (response && response.error) throw new Error(response.error);
+
+      toast.success('Mappa consegnata correttamente!');
       setMapId('');
     } catch (e) {
-      toast.error(e.message);
-    } {
-      setSubmitting(false);
+      console.error("Errore handleSubmitMap:", e);
+      toast.error(e.message || "Errore durante la consegna.");
+    } finally {
+      setSubmitting(false); // Riabilita il pulsante SEMPRE
     }
   };
 
