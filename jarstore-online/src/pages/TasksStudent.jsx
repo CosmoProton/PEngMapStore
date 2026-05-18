@@ -24,7 +24,7 @@ export default function TasksStudent() {
 
     setFetching(true);
     try {
-      const data = await apiFetch(`/api/tasks?action=student&userNik=${encodeURIComponent(studentNik)}`);
+      const data = await apiFetch('/api/tasks');
       
       if (data && data.error) throw new Error(data.error);
       setTasks(Array.isArray(data) ? data : []);
