@@ -112,10 +112,10 @@ export default function TasksAdmin() {
                   >
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{task.title}</div>
                     <div style={S.badgeRow}>
-                      {task.assigned_to.length === 0 ? (
+                      {!Array.isArray(task.assigned_to) || task.assigned_to.length === 0 ? (
                         <span style={S.badgeGlobal}><Globe size={10} /> Tutti</span>
                       ) : (
-                        <span style={S.badgePrivate}><Lock size={10} /> Privato ({task.assigned_to.length})</span>
+                        <span style={S.badgePrivate}><Lock size={10} /> Privato ({task.assigned_to?.length || 0})</span>
                       )}
                     </div>
                   </div>
