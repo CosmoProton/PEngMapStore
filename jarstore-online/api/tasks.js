@@ -46,7 +46,9 @@ export default async function handler(req, res) {
         // Filtro: mostra se l'array assigned_to è vuoto ({}) oppure contiene il nickname dello studente
         const filtered = (data || []).filter(t => {
           if (!t.assigned_to || !Array.isArray(t.assigned_to) || t.assigned_to.length === 0) return true;
-          return t.assigned_to.includes(userNik);
+          return t.assigned_to.some(
+            nik => String(nik).toLowerCase() === String(userNik).toLowerCase()
+          );
         });
 
         return res.status(200).json(filtered);
