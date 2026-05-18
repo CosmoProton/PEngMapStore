@@ -5,6 +5,7 @@ import { ToastContainer } from '../components/ToastContainer.jsx';
 import { ClipboardList, Plus, Calendar, Users, Globe, Lock, FileText, AlertCircle } from 'lucide-react';
 
 export default function TasksAdmin() {
+  console.log("TASK ADMIN REAL FILE LOADED");
   const { user } = useAuth();
   const toast = useToast();
   const [tasks, setTasks] = useState([]);
