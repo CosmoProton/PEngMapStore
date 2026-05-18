@@ -15,7 +15,12 @@ export default function TasksStudent() {
 
   const fetchMyTasks = useCallback(async () => {
     // FIX: Intercettiamo il nome utente corretto, che sia su github_username o su user_metadata
-    const studentNik = user?.github_username || user?.user_metadata?.user_name;
+    const studentNik =
+      user?.github_username ||
+      user?.user_metadata?.user_name ||
+      user?.login ||
+      user?.name ||
+      user?.email;
     
     if (!studentNik) {
       setFetching(false); // FIX CRITICO: Spegne la girella se non trova il nome!
