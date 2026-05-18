@@ -19,21 +19,27 @@ export default function TasksAdmin() {
   const [assignedTo, setAssignedTo] = useState('');
 
   const fetchTasks = useCallback(async () => {
+    console.log("START FETCH TASKS");
+  
     setFetching(true);
+  
     try {
       const data = await apiFetch('/api/tasks');
-      
-      // FIX CRITICO: Se l'API restituisce un errore nel JSON, fermati e mostra l'errore
-      if (data && data.error) throw new Error(data.error);
-      
-      // FIX CRITICO: Assicuriamoci che data sia SEMPRE un array prima di passarlo a React
+  
+      console.log("DATA:", data);
+  
       setTasks(Array.isArray(data) ? data : []);
+  
     } catch (e) {
-      console.error("Errore fetchTasks:", e);
-      toast.error(e.message || "Errore sconosciuto nel caricamento.");
-      setTasks([]); // Evita il crash di tasks.map()
+      console.error("FETCH ERROR:", e);
+  
+      setTasks([]);
+  
+      toast.error(e.message);
+  
     } finally {
-      setFetching(false); // Spegne la girella SEMPRE
+      console.log("FETCH FINALLY");
+      setFetching(false);
     }
   }, [toast]);
 
