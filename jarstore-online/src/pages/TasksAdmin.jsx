@@ -19,32 +19,41 @@ export default function TasksAdmin() {
   const [deadline, setDeadline] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
 
-  const fetchTasks = useCallback(async () => {
+  useEffect(() => {
+
+  const fetchTasks = async () => {
+
     console.log("START FETCH TASKS");
-  
+
     setFetching(true);
-  
+
     try {
+
       const data = await apiFetch('/api/tasks');
-  
+
       console.log("DATA:", data);
-  
+
       setTasks(Array.isArray(data) ? data : []);
-  
+
     } catch (e) {
+
       console.error("FETCH ERROR:", e);
-  
+
       setTasks([]);
-  
-      toast.error(e.message);
-  
+
+      toast.error(e.message || "Errore caricamento task");
+
     } finally {
+
       console.log("FETCH FINALLY");
+
       setFetching(false);
     }
-  }, [toast]);
+  };
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  fetchTasks();
+
+}, []);
 
   const selectTask = async (task) => {
     setSelectedTask(task);
@@ -77,7 +86,7 @@ export default function TasksAdmin() {
       toast.success('Task pubblicato con successo!');
       setTitle(''); setDescription(''); setDeadline(''); setAssignedTo('');
       setIsModalOpen(false);
-      fetchTasks();
+      window.location.reload();
     } catch (e) {
       console.error("Errore handleCreateTask:", e);
       toast.error(e.message || "Errore durante la creazione del compito.");
